@@ -1,0 +1,4 @@
+Modele,Accuracy,F1-Score,CV Mean,CV Std,Temps_train_s
+Logistic Regression,0.5355,0.5636,0.5681,0.0039,0.017
+Random Forest,0.5935,0.5052,0.5009,0.0102,0.224
+XGBoost,0.6935,0.175,0.193,0.0272,0.089

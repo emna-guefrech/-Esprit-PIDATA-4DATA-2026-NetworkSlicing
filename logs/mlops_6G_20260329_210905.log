@@ -1,0 +1,116 @@
+[21:09:05] INFO     
+=================================================================
+[21:09:05] INFO       PIPELINE MLOps 6G — Tache : SLA
+[21:09:05] INFO       Demarre le : 2026-03-29 21:09:05
+[21:09:05] INFO     =================================================================
+[21:09:05] INFO     =================================================================
+[21:09:05] INFO       ETAPE 1 — Chargement & Validation des donnees
+[21:09:05] INFO     =================================================================
+[21:09:05] INFO       OK Dataset charge : 10,000 lignes x 27 colonnes
+[21:09:05] INFO       MD5 : f7b408582e6c335ff4daff3aa927c7b9
+[21:09:05] INFO       OK Toutes les colonnes requises sont presentes
+[21:09:05] INFO       OK Aucune valeur manquante
+[21:09:05] INFO       OK Aucun doublon
+[21:09:05] INFO       SLA_Respected : {0: 0.7, 1: 0.3}
+[21:09:05] INFO       Slice Type    : {0: 2262, 2: 2237, 4: 2204, 1: 2203, 3: 1094}
+[21:09:05] INFO     --------------------------------------------------
+[21:09:05] INFO       ETAPE 2 — Pretraitement  [tache : SLA]
+[21:09:05] INFO     --------------------------------------------------
+[21:09:05] INFO       OK Train : 8,000  /  Test : 2,000
+[21:09:05] INFO       OK Features : ['Latency_Gap', 'Packet_Loss_Gap', 'Jitter_Gap', 'Rate_Gap']
+[21:09:05] INFO     --------------------------------------------------
+[21:09:05] INFO       ETAPE 3 — Entrainement & Evaluation  [tache : SLA]
+[21:09:05] INFO     --------------------------------------------------
+[21:09:05] INFO       >> Logistic Regression ...
+[21:09:07] INFO          Acc=0.5355  F1=0.5636  CV=0.5681+/-0.0039  (0.017s)
+[21:09:07] INFO       >> Random Forest ...
+[21:09:10] INFO          Acc=0.5935  F1=0.5052  CV=0.5009+/-0.0102  (0.224s)
+[21:09:10] INFO       >> XGBoost ...
+[21:09:12] INFO          Acc=0.6935  F1=0.1750  CV=0.1930+/-0.0272  (0.089s)
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       ETAPE 4 — Selection du meilleur modele
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       BEST : Logistic Regression
+[21:09:12] INFO          F1-Score : 0.5636
+[21:09:12] INFO          Accuracy : 0.5355
+[21:09:12] INFO          CV       : 0.5681 +/- 0.0039
+[21:09:12] INFO     
+  Rapport complet :
+              precision    recall  f1-score   support
+
+           0       1.00      0.34      0.50      1400
+           1       0.39      1.00      0.56       600
+
+    accuracy                           0.54      2000
+   macro avg       0.70      0.67      0.53      2000
+weighted avg       0.82      0.54      0.52      2000
+
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       ETAPE 5 — Sauvegarde & Versioning
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       Modele  -> models/sla_logistic_regression_v1.pkl
+[21:09:12] INFO       Scaler  -> models/sla_scaler_v1.pkl
+[21:09:12] INFO       Registre mis a jour — v1 en production
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       ETAPE 6 — Generation des rapports
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       CSV -> reports/sla_comparison_20260329_210912.csv
+[21:09:12] INFO       Matrices de confusion -> reports/sla_confusion_20260329_210912.png
+[21:09:12] INFO       Barplot F1 -> reports/sla_f1_barplot_20260329_210912.png
+[21:09:12] INFO     =================================================================
+[21:09:12] INFO       Pipeline 'SLA' termine avec succes
+[21:09:12] INFO     =================================================================
+[21:09:12] INFO     
+=================================================================
+[21:09:12] INFO       PIPELINE MLOps 6G — Tache : SLICE
+[21:09:12] INFO       Demarre le : 2026-03-29 21:09:12
+[21:09:12] INFO     =================================================================
+[21:09:12] INFO     =================================================================
+[21:09:12] INFO       ETAPE 1 — Chargement & Validation des donnees
+[21:09:12] INFO     =================================================================
+[21:09:12] INFO       OK Dataset charge : 10,000 lignes x 27 colonnes
+[21:09:12] INFO       MD5 : f7b408582e6c335ff4daff3aa927c7b9
+[21:09:12] INFO       OK Toutes les colonnes requises sont presentes
+[21:09:12] INFO       OK Aucune valeur manquante
+[21:09:12] INFO       OK Aucun doublon
+[21:09:12] INFO       SLA_Respected : {0: 0.7, 1: 0.3}
+[21:09:12] INFO       Slice Type    : {0: 2262, 2: 2237, 4: 2204, 1: 2203, 3: 1094}
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       ETAPE 2 — Pretraitement  [tache : SLICE]
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       OK Train : 8,000  /  Test : 2,000
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       ETAPE 3 — Entrainement & Evaluation  [tache : SLICE]
+[21:09:12] INFO     --------------------------------------------------
+[21:09:12] INFO       >> Logistic Regression ...
+[21:09:14] INFO          Acc=1.0000  F1=1.0000  CV=1.0000+/-0.0000  (0.019s)
+[21:09:14] INFO       >> Random Forest ...
+[21:09:14] INFO          Acc=1.0000  F1=1.0000  CV=1.0000+/-0.0000  (0.162s)
+[21:09:14] INFO       >> XGBoost ...
+[21:09:15] INFO          Acc=1.0000  F1=1.0000  CV=1.0000+/-0.0000  (0.142s)
+[21:09:15] INFO     --------------------------------------------------
+[21:09:15] INFO       ETAPE 4 — Selection du meilleur modele
+[21:09:15] INFO     --------------------------------------------------
+[21:09:15] INFO       BEST : Logistic Regression
+[21:09:15] INFO          F1-Score : 1.0
+[21:09:15] INFO          Accuracy : 1.0
+[21:09:15] INFO          CV       : 1.0 +/- 0.0
+[21:09:15] INFO     
+  Rapport complet :
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00       452
+           1       1.00      1.00      1.00       441
+           2       1.00      1.00      1.00       447
+           3       1.00      1.00      1.00       219
+           4       1.00      1.00      1.00       441
+
+    accuracy                           1.00      2000
+   macro avg       1.00      1.00      1.00      2000
+weighted avg       1.00      1.00      1.00      2000
+
+[21:09:15] INFO     --------------------------------------------------
+[21:09:15] INFO       ETAPE 5 — Sauvegarde & Versioning
+[21:09:15] INFO     --------------------------------------------------
+[21:09:15] INFO       Modele  -> models/slice_logistic_regression_v1.pkl
+[21:09:15] INFO       Scaler  -> models/slice_scaler_v1.pkl

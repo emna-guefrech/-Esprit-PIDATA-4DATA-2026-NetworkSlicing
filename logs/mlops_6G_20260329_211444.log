@@ -1,0 +1,50 @@
+[21:14:44] INFO     
+=================================================================
+[21:14:44] INFO       PIPELINE MLOps 6G — Tache : SLA
+[21:14:44] INFO       Demarre le : 2026-03-29 21:14:44
+[21:14:44] INFO     =================================================================
+[21:14:44] INFO     =================================================================
+[21:14:44] INFO       ETAPE 1 — Chargement & Validation des donnees
+[21:14:44] INFO     =================================================================
+[21:14:44] INFO       OK Dataset charge : 10,000 lignes x 27 colonnes
+[21:14:44] INFO       MD5 : f7b408582e6c335ff4daff3aa927c7b9
+[21:14:44] INFO       OK Toutes les colonnes requises sont presentes
+[21:14:44] INFO       OK Aucune valeur manquante
+[21:14:44] INFO       OK Aucun doublon
+[21:14:44] INFO       SLA_Respected : {0: 0.7, 1: 0.3}
+[21:14:44] INFO       Slice Type    : {0: 2262, 2: 2237, 4: 2204, 1: 2203, 3: 1094}
+[21:14:44] INFO     --------------------------------------------------
+[21:14:44] INFO       ETAPE 2 — Pretraitement  [tache : SLA]
+[21:14:44] INFO     --------------------------------------------------
+[21:14:44] INFO       OK Train : 8,000  /  Test : 2,000
+[21:14:44] INFO       OK Features : ['Latency_Gap', 'Packet_Loss_Gap', 'Jitter_Gap', 'Rate_Gap']
+[21:14:44] INFO     --------------------------------------------------
+[21:14:44] INFO       ETAPE 3 — Entrainement & Evaluation  [tache : SLA]
+[21:14:44] INFO     --------------------------------------------------
+[21:14:44] INFO       >> Logistic Regression ...
+[21:14:46] INFO          Acc=0.5355  F1=0.5636  CV=0.5681+/-0.0039  (0.012s)
+[21:14:46] INFO       >> Random Forest ...
+[21:14:49] INFO          Acc=0.5935  F1=0.5052  CV=0.5009+/-0.0102  (0.225s)
+[21:14:49] INFO       >> XGBoost ...
+[21:14:51] INFO          Acc=0.6935  F1=0.1750  CV=0.1930+/-0.0272  (0.084s)
+[21:14:51] INFO     --------------------------------------------------
+[21:14:51] INFO       ETAPE 4 — Selection du meilleur modele
+[21:14:51] INFO     --------------------------------------------------
+[21:14:51] INFO       BEST : Logistic Regression
+[21:14:51] INFO          F1-Score : 0.5636
+[21:14:51] INFO          Accuracy : 0.5355
+[21:14:51] INFO          CV       : 0.5681 +/- 0.0039
+[21:14:51] INFO     
+  Rapport complet :
+              precision    recall  f1-score   support
+
+           0       1.00      0.34      0.50      1400
+           1       0.39      1.00      0.56       600
+
+    accuracy                           0.54      2000
+   macro avg       0.70      0.67      0.53      2000
+weighted avg       0.82      0.54      0.52      2000
+
+[21:14:51] INFO     --------------------------------------------------
+[21:14:51] INFO       ETAPE 5 — Sauvegarde & Versioning
+[21:14:51] INFO     --------------------------------------------------
