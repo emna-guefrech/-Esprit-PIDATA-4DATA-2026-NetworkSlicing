@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - SIXG_PREDICTION_URL=http://sixg-prediction-service:8001
+      - FIVEG_PREDICTION_URL=http://fiveg-prediction-service:8002
+      - TRUSTWORTHY_AI_URL=http://trustworthy-ai-service:8003
+      - MONITORING_URL=http://monitoring-service:8004
+      - JWT_SECRET=your-secret-key-change-in-production
+      - LOG_LEVEL=INFO
+    depends_on:
+      - sixg-prediction-service
+      - fiveg-prediction-service
+      - trustworthy-ai-service
+      - monitoring-service
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  # 6G Prediction Service
+  sixg-prediction-service:
+    build: ./6g-prediction-service
+    ports:
+      - "8001:8001"
+    environment:
+      - LOG_LEVEL=INFO
+    volumes:
+      - ../shared/models:/app/shared/models
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  # 5G Prediction Service
+  fiveg-prediction-service:
+    build: ./5g-prediction-service
+    ports:
+      - "8002:8002"
+    environment:
+      - LOG_LEVEL=INFO
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  # Trustworthy AI Service
+  trustworthy-ai-service:
+    build: ./trustworthy-ai-service
+    ports:
+      - "8003:8003"
+    environment:
+      - LOG_LEVEL=INFO
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  # Monitoring Service
+  monitoring-service:
+    build: ./monitoring-service
+    ports:
+      - "8004:8004"
+    environment:
+      - LOG_LEVEL=INFO
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+networks:
+  backend-network:
+    driver: bridge

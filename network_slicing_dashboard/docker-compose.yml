@@ -1,0 +1,172 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - PREDICTION_SERVICE_URL=http://prediction-service:8001
+      - MODEL_SERVICE_URL=http://model-service:8002
+      - TRUSTWORTHY_SERVICE_URL=http://trustworthy-ai-service:8003
+      - MONITORING_SERVICE_URL=http://monitoring-service:8004
+      - JWT_SECRET=your-secret-key-change-in-production
+      - LOG_LEVEL=INFO
+    depends_on:
+      - prediction-service
+      - model-service
+      - trustworthy-ai-service
+      - monitoring-service
+    networks:
+      - network-slicing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prediction Service
+  prediction-service:
+    build: ./prediction-service
+    ports:
+      - "8001:8001"
+    environment:
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./shared/models:/app/shared/models
+    networks:
+      - network-slicing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Model Service
+  model-service:
+    build: ./model-service
+    ports:
+      - "8002:8002"
+    environment:
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./shared/models:/app/shared/models
+    networks:
+      - network-slicing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Trustworthy AI Service
+  trustworthy-ai-service:
+    build: ./trustworthy-ai-service
+    ports:
+      - "8003:8003"
+    environment:
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./shared/models:/app/shared/models
+    networks:
+      - network-slicing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Monitoring Service
+  monitoring-service:
+    build: ./monitoring-service
+    ports:
+      - "8004:8004"
+    environment:
+      - LOG_LEVEL=INFO
+    networks:
+      - network-slicing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Service (Streamlit)
+  frontend-service:
+    build: ./frontend-service
+    ports:
+      - "8500:8500"
+    environment:
+      - API_GATEWAY_URL=http://api-gateway:8000
+    depends_on:
+      - api-gateway
+    networks:
+      - network-slicing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and message queue
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - network-slicing-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - network-slicing-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - network-slicing-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+networks:
+  network-slicing-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
