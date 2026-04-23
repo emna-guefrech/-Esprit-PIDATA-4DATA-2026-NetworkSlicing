@@ -9,16 +9,21 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+*.egg-info/
 
 # Large model files
 *.pkl
 *.joblib
 *.npy
 
+# Data files
+*.csv
+
 # MLflow
 mlruns/
 5g_pipeline/mlflow.db
 6g_pipeline/mlflow.db
+mlflow.db
 
 # Jupyter
 *.ipynb_checkpoints/
@@ -26,13 +31,21 @@ mlruns/
 # OS
 .DS_Store
 
+# Plots
+*.png
+
 # Docker
 *.tar
+.dockerignore
 
 # Virtual environments
 .venv/
 venv/
 */.venv/
+
+# IDE
+.vscode/
+.idea/
 
 # Python cache
 __pycache__/
