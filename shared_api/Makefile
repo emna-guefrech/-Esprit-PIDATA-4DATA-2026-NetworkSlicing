@@ -15,7 +15,9 @@ PORT           = 8000
 
 .PHONY: install api api_docs \
         docker_build docker_run docker_stop \
-        docker_push docker_logs docker_clean help
+        docker_push docker_logs docker_clean help \
+        compose_up \
+        compose_down
 
 help:
 	@echo ""
@@ -72,15 +74,28 @@ docker_logs:
 	docker logs $(CONTAINER)
 
 docker_push:
-	@echo ">>> Tagging image for Docker Hub..."
+	@echo ">>> Pushing backend to Docker Hub..."
 	docker tag $(IMAGE_NAME) $(FULL_IMAGE)
-	@echo ">>> Pushing to Docker Hub..."
 	docker push $(FULL_IMAGE)
-	@echo ">>> Pushed ✅"
-	@echo ">>> https://hub.docker.com/r/$(DOCKERHUB_USER)/$(IMAGE_NAME)"
+	@echo ">>> Pushing frontend to Docker Hub..."
+	docker tag emna_guefrech_frontend_4data_mlops3 \
+		$(DOCKERHUB_USER)/emna_guefrech_frontend_4data_mlops3:latest
+	docker push $(DOCKERHUB_USER)/emna_guefrech_frontend_4data_mlops3:latest
+	@echo ">>> Both images pushed ✅"
+	@echo ">>> Backend : https://hub.docker.com/r/$(DOCKERHUB_USER)/$(IMAGE_NAME)"
+	@echo ">>> Frontend: https://hub.docker.com/r/$(DOCKERHUB_USER)/emna_guefrech_frontend_4data_mlops3"
 
 docker_clean: docker_stop
 	@echo ">>> Removing Docker image..."
 	docker rmi $(IMAGE_NAME) || true
 	docker rmi $(FULL_IMAGE) || true
 	@echo ">>> Cleanup done ✅"
+compose_up:
+	@echo ">>> Starting full stack (back + front)..."
+	cd .. && sudo docker-compose up -d --build
+	@echo ">>> Backend : http://localhost:8000/docs"
+	@echo ">>> Frontend: http://localhost:3000"
+
+compose_down:
+	@echo ">>> Stopping full stack..."
+	cd .. && sudo docker-compose down

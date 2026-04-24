@@ -23,7 +23,7 @@ services:
     image: emna_guefrech_frontend_4data_mlops3
     container_name: network_slicing_frontend
     ports:
-      - "80:80"
+      - "3000:80"
     depends_on:
       - backend
     networks:
