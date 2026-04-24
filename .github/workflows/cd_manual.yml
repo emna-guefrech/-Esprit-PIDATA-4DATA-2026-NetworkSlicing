@@ -76,7 +76,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pandas numpy scikit-learn joblib matplotlib seaborn \
-                      xgboost river mlflow shap pytest
+                      xgboost river mlflow shap pytest elasticsearch==8.11.0
 
       - name: Create fake datasets
         run: |

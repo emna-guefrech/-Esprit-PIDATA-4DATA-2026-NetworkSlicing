@@ -25,7 +25,7 @@ jobs:
 
       - name: Install CI dependencies
         run: |
-          pip install black flake8 bandit pytest
+          pip install black flake8 bandit pytest elasticsearch==8.11.0
 
       - name: Format check (black)
         run: |
@@ -57,7 +57,7 @@ jobs:
 
       - name: Install CI dependencies
         run: |
-          pip install black flake8 bandit pytest
+          pip install black flake8 bandit pytest elasticsearch==8.11.0
 
       - name: Format check (black)
         run: |
@@ -91,7 +91,7 @@ jobs:
 
       - name: Install 5G dependencies
         run: |
-          pip install pandas numpy scikit-learn joblib matplotlib seaborn scipy xgboost river mlflow pytest
+          pip install pandas numpy scikit-learn joblib matplotlib seaborn scipy xgboost river mlflow pytest elasticsearch==8.11.0
 
       - name: Create fake dataset for CI
         run: |
@@ -202,7 +202,7 @@ jobs:
 
       - name: Install 6G dependencies
         run: |
-          pip install pandas numpy scikit-learn joblib matplotlib seaborn xgboost mlflow pytest shap
+          pip install pandas numpy scikit-learn joblib matplotlib seaborn xgboost mlflow pytest shap elasticsearch==8.11.0
 
       - name: Create fake dataset for CI
         run: |
