@@ -1343,7 +1343,7 @@ def explain_model(
             "type":            "explainability",
         })
         # Save SHAP importance as a CSV artifact
-        import tempfile, os
+        import tempfile
         shap_df = pd.DataFrame(
             list(shap_importance.items()),
             columns=["feature", "mean_abs_shap"]
