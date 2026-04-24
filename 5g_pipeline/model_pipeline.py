@@ -23,7 +23,7 @@ import pandas as pd
 import joblib
 import mlflow
 import mlflow.sklearn
-
+import os
 from datetime import datetime, timezone
 from elasticsearch import Elasticsearch
 
@@ -314,7 +314,7 @@ def train_model(
     -------
     Fitted RandomForestClassifier
     """
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("5G_RandomForest_SliceClassification")
 
     with mlflow.start_run(run_name="RF_train"):
@@ -375,7 +375,7 @@ def evaluate_model(
     -------
     dict with accuracy, f1_macro, report, confusion_matrix
     """
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("5G_RandomForest_SliceClassification")
 
     print("[evaluate_model] Evaluating Random Forest...")
@@ -606,7 +606,7 @@ def train_xgboost(
     print(f"  Log Loss         : {ll:.4f}")
     print(f"{'='*50}")
 
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("5G_XGBoost_SLARisk")
     with mlflow.start_run(run_name="XGB_train"):
         mlflow.log_param("calibration_method", best_method)
@@ -672,7 +672,7 @@ def evaluate_xgboost(
     print("\nClassification Report:")
     print(report)
 
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("5G_XGBoost_SLARisk")
     with mlflow.start_run(run_name="XGB_evaluate"):
         mlflow.log_metric("val_auc_roc",    round(auc,   4))
@@ -885,7 +885,7 @@ def train_anomaly_models(
     print(f"  Best threshold: {best_thresh:.3f}")
     print(f"{'='*50}")
 
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("5G_AnomalyDetection_Ensemble")
     with mlflow.start_run(run_name="Anomaly_train"):
         mlflow.log_param("contamination",   CONTAMINATION)
@@ -959,7 +959,7 @@ def evaluate_anomaly_models(
     print("\nClassification Report:")
     print(report)
 
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("5G_AnomalyDetection_Ensemble")
     with mlflow.start_run(run_name="Anomaly_evaluate"):
         mlflow.log_metric("val_auc_roc",          round(auc, 4))
@@ -1130,7 +1130,7 @@ def train_online_model(
     print(f"  Drift events     : {len(drift_log)}")
     print(f"{'='*50}")
 
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("5G_OnlineLearning_HAT")
     with mlflow.start_run(run_name="HAT_train"):
         mlflow.log_param("grace_period",    best_params["grace_period"])
@@ -1208,7 +1208,7 @@ def evaluate_online_model(
     print("\nClassification Report:")
     print(report)
 
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("5G_OnlineLearning_HAT")
     with mlflow.start_run(run_name="HAT_evaluate"):
         mlflow.log_metric("test_auc_roc",          round(auc, 4))
@@ -1317,7 +1317,7 @@ def explain_model(
     print(f"[explain_model] Top LIME feature : {top_lime_feature}")
 
     # ── MLflow logging ────────────────────────────────────────────────────────
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("5G_XAI_Explainability")
 
     with mlflow.start_run(run_name="XAI_SHAP_LIME"):

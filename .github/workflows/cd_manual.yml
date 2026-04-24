@@ -63,6 +63,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_push
     if: ${{ inputs.run_training == 'true' }}
+    env:
+      MLFLOW_TRACKING_URI: sqlite:///mlflow.db
 
     steps:
       - name: Checkout code

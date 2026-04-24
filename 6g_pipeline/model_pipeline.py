@@ -210,7 +210,7 @@ def train_model_regression(dataset_path="network_slicing_congestion_final.csv"):
         "XGBoost": XGBRegressor(n_estimators=100, random_state=42, verbosity=0),
     }
     results = {}
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("6G_DSO1_QoS_Regression")
 
     for name, model in models.items():
@@ -399,7 +399,7 @@ def train_model_anomaly(dataset_path="network_slicing_congestion_final.csv"):
     print(f"Anomaly rate: {anomaly_rate:.1f}%")
 
     import mlflow
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("6G_DSO52_AnomalyDetection")
     with mlflow.start_run(run_name="DSO52_IsolationForest"):
         mlflow.log_param("contamination", 0.05)
@@ -552,7 +552,7 @@ def train_model_online(dataset_path="network_slicing_congestion_final.csv", n_ba
     print(f"\n✅ Final — Accuracy: {history[-1]['accuracy']:.4f} | F1: {history[-1]['f1']:.4f}")
 
     import mlflow
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("6G_DSO53_OnlineLearning")
     with mlflow.start_run(run_name="DSO53_SGD_Online"):
         mlflow.log_param("n_batches",       n_batches)
@@ -696,7 +696,7 @@ def train_model_xai(dataset_path="network_slicing_congestion_final.csv"):
 
     import mlflow
     import mlflow.xgboost
-    mlflow.set_tracking_uri("sqlite:////home/emna/network_slicing_pipeline/mlflow.db")
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////home/emna/network_slicing_pipeline/mlflow.db"))
     mlflow.set_experiment("6G_DSO54_XAI_XGBoost")
     with mlflow.start_run(run_name="DSO54_XGBoost_XAI"):
         mlflow.log_param("n_estimators",  300)
