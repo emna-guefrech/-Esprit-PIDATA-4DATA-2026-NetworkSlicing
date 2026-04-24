@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Slicing Dashboard - 5G & 6G</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        @keyframes pulse-red {
+            0%, 100% { background-color: rgba(239, 68, 68, 0.1); }
+            50% { background-color: rgba(239, 68, 68, 0.2); }
+        }
+        @keyframes pulse-yellow {
+            0%, 100% { background-color: rgba(245, 158, 11, 0.1); }
+            50% { background-color: rgba(245, 158, 11, 0.2); }
+        }
+        .alert-critical { animation: pulse-red 2s infinite; }
+        .alert-warn { animation: pulse-yellow 2s infinite; }
+        .main-bg {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            min-height: 100vh;
+        }
+        .card-style {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            backdrop-filter: blur(8px);
+        }
+        .button-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            transition: all 0.2s ease;
+        }
+        .button-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-1px);
+        }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #1e40af; font-weight: 600; }
+        .result-box {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .result-box.error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        .result-box.warning {
+            background: #fffbeb;
+            border-left-color: #f59e0b;
+        }
+        .loading { opacity: 0.6; pointer-events: none; }
+    </style>
+</head>
+<body class="main-bg text-gray-800">
+<div class="container mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <header class="mb-8">
+        <div class="card-style p-6 rounded-xl">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-blue-800 mb-1">
+                        🌐 Network Slicing Dashboard
+                    </h1>
+                    <p class="text-gray-500">5G & 6G Unified ML Pipeline — Real-time Predictions</p>
+                </div>
+                <div class="text-right">
+                    <div id="connectionStatus" class="text-sm text-green-600 mb-1">● Checking...</div>
+                    <div id="lastUpdate" class="text-xs text-gray-400">Never updated</div>
+                    <div class="text-xs text-gray-400 mt-1">
+                        API: <span id="apiUrl" class="font-mono text-blue-600">http://localhost:8000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="card-style mb-6 p-1 flex space-x-1">
+        <button onclick="showTab('tab5g')" id="btn-tab5g"
+            class="tab-btn flex-1 py-3 px-4 rounded-lg text-sm font-medium tab-active">
+            📡 5G Predictions
+        </button>
+        <button onclick="showTab('tab6g')" id="btn-tab6g"
+            class="tab-btn flex-1 py-3 px-4 rounded-lg text-sm font-medium text-gray-500">
+            🚀 6G Predictions
+        </button>
+        <button onclick="showTab('tabModels')" id="btn-tabModels"
+            class="tab-btn flex-1 py-3 px-4 rounded-lg text-sm font-medium text-gray-500">
+            🤖 Model Status
+        </button>
+        <button onclick="showTab('tabHistory')" id="btn-tabHistory"
+            class="tab-btn flex-1 py-3 px-4 rounded-lg text-sm font-medium text-gray-500">
+            📊 History
+        </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 1: 5G Predictions -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="tab5g" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- 5G Input Form -->
+            <div class="card-style p-6">
+                <h2 class="text-xl font-bold text-blue-800 mb-4">📥 5G Input Parameters</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            🕐 Time (hour of day: 0-23)
+                        </label>
+                        <input type="number" id="5g_time" value="14" min="0" max="23" step="1"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            📉 Packet Loss Rate (e.g. 0.001)
+                        </label>
+                        <input type="number" id="5g_plr" value="0.001" min="0.000001" max="1" step="0.0001"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <div class="text-xs text-gray-400 mt-1">Common values: 1e-6 (low), 1e-3 (medium), 1e-2 (high)</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            ⏱️ Packet Delay (ms)
+                        </label>
+                        <select id="5g_delay" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            <option value="10">10 ms (Ultra-low)</option>
+                            <option value="50">50 ms (Low)</option>
+                            <option value="75">75 ms</option>
+                            <option value="100" selected>100 ms (Medium)</option>
+                            <option value="150">150 ms (High)</option>
+                            <option value="300">300 ms (Very High)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            📶 LTE/5G Category
+                        </label>
+                        <input type="number" id="5g_cat" value="14" min="1" max="20"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button onclick="predict5G('slice')"
+                            class="button-primary text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            🔍 Predict Slice
+                        </button>
+                        <button onclick="predict5G('sla_risk')"
+                            class="button-primary text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            ⚠️ SLA Risk
+                        </button>
+                        <button onclick="predict5G('anomaly')"
+                            class="button-primary text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            🚨 Anomaly
+                        </button>
+                        <button onclick="predict5G('online')"
+                            class="button-primary text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            🔄 Online HAT
+                        </button>
+                    </div>
+                    <button onclick="predict5G('xai')"
+                        class="w-full button-primary text-white py-2 px-4 rounded-lg text-sm font-medium">
+                        🧠 XAI Explanation (SHAP)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 5G Results -->
+            <div class="card-style p-6">
+                <h2 class="text-xl font-bold text-blue-800 mb-4">📊 5G Prediction Results</h2>
+                <div id="5g_result">
+                    <div class="text-center text-gray-400 py-12">
+                        <div class="text-4xl mb-3">📡</div>
+                        <p>Fill in the parameters and click a prediction button</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 2: 6G Predictions -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="tab6g" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- 6G Input Form -->
+            <div class="card-style p-6">
+                <h2 class="text-xl font-bold text-blue-800 mb-4">📥 6G Input Parameters (SLA Gaps)</h2>
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Latency Budget (μs)</label>
+                            <input type="number" id="6g_lat_budget" value="200"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Slice Latency (μs)</label>
+                            <input type="number" id="6g_lat_slice" value="150"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Packet Loss Budget</label>
+                            <input type="number" id="6g_plr_budget" value="0.01" step="0.001"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Slice Packet Loss</label>
+                            <input type="number" id="6g_plr_slice" value="0.005" step="0.001"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Jitter Budget (μs)</label>
+                            <input type="number" id="6g_jit_budget" value="50"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Slice Jitter (μs)</label>
+                            <input type="number" id="6g_jit_slice" value="30"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Data Rate Budget (Gbps)</label>
+                            <input type="number" id="6g_rate_budget" value="5.0" step="0.1"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Transfer Rate (Gbps)</label>
+                            <input type="number" id="6g_rate_slice" value="6.0" step="0.1"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button onclick="predict6G('qos')"
+                            class="button-primary text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            📈 QoS Probability
+                        </button>
+                        <button onclick="predict6G('anomaly')"
+                            class="button-primary text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            🚨 Anomaly Detection
+                        </button>
+                        <button onclick="predict6G('congestion')"
+                            class="button-primary text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            🔴 Congestion Class
+                        </button>
+                        <button onclick="predict6G('xai')"
+                            class="button-primary text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            🧠 XAI Explanation
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6G Results -->
+            <div class="card-style p-6">
+                <h2 class="text-xl font-bold text-blue-800 mb-4">📊 6G Prediction Results</h2>
+                <div id="6g_result">
+                    <div class="text-center text-gray-400 py-12">
+                        <div class="text-4xl mb-3">🚀</div>
+                        <p>Fill in the parameters and click a prediction button</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 3: Model Status -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="tabModels" class="tab-content hidden">
+        <div class="card-style p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-blue-800">🤖 Loaded Models Status</h2>
+                <button onclick="loadModelStatus()"
+                    class="button-primary text-white py-2 px-4 rounded-lg text-sm">
+                    🔄 Refresh
+                </button>
+            </div>
+            <div id="models_result">
+                <div class="text-center text-gray-400 py-8">Click Refresh to load model status</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 4: History -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div id="tabHistory" class="tab-content hidden">
+        <div class="card-style p-6">
+            <h2 class="text-xl font-bold text-blue-800 mb-6">📊 Prediction History</h2>
+            <div id="history_container">
+                <div class="text-center text-gray-400 py-8">No predictions yet</div>
+            </div>
+            <button onclick="clearHistory()"
+                class="mt-4 text-sm text-red-500 hover:text-red-700">
+                🗑️ Clear History
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ── Configuration ─────────────────────────────────────────────────
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+let predictionHistory = [];
+
+// ── Tab switching ─────────────────────────────────────────────────
+function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('tab-active');
+        b.classList.add('text-gray-500');
+    });
+    document.getElementById(tabId).classList.remove('hidden');
+    document.getElementById('btn-' + tabId).classList.add('tab-active');
+    document.getElementById('btn-' + tabId).classList.remove('text-gray-500');
+
+    if (tabId === 'tabModels') loadModelStatus();
+    if (tabId === 'tabHistory') renderHistory();
+}
+
+// ── API health check ──────────────────────────────────────────────
+async function checkHealth() {
+    try {
+        const res = await fetch(`${API_BASE}/`);
+        const data = await res.json();
+        document.getElementById('connectionStatus').textContent = '● Connected';
+        document.getElementById('connectionStatus').className = 'text-sm text-green-600';
+        document.getElementById('lastUpdate').textContent =
+            'Last updated: ' + new Date().toLocaleTimeString();
+    } catch {
+        document.getElementById('connectionStatus').textContent = '● Disconnected';
+        document.getElementById('connectionStatus').className = 'text-sm text-red-600';
+    }
+}
+
+// ── Get 5G input values ───────────────────────────────────────────
+function get5GInput() {
+    return {
+        time:      parseFloat(document.getElementById('5g_time').value),
+        plr:       parseFloat(document.getElementById('5g_plr').value),
+        delay:     parseFloat(document.getElementById('5g_delay').value),
+        lte5g_cat: parseFloat(document.getElementById('5g_cat').value),
+    };
+}
+
+// ── Get 6G input values ───────────────────────────────────────────
+function get6GInput() {
+    return {
+        latency_budget_us:      parseFloat(document.getElementById('6g_lat_budget').value),
+        slice_latency_us:       parseFloat(document.getElementById('6g_lat_slice').value),
+        packet_loss_budget:     parseFloat(document.getElementById('6g_plr_budget').value),
+        slice_packet_loss:      parseFloat(document.getElementById('6g_plr_slice').value),
+        jitter_budget_us:       parseFloat(document.getElementById('6g_jit_budget').value),
+        slice_jitter_us:        parseFloat(document.getElementById('6g_jit_slice').value),
+        data_rate_budget_gbps:  parseFloat(document.getElementById('6g_rate_budget').value),
+        slice_transfer_rate_gbps: parseFloat(document.getElementById('6g_rate_slice').value),
+    };
+}
+
+// ── 5G Predictions ────────────────────────────────────────────────
+async function predict5G(endpoint) {
+    const resultDiv = document.getElementById('5g_result');
+    resultDiv.innerHTML = '<div class="text-center py-8"><div class="text-2xl animate-spin">⚙️</div><p class="text-gray-400 mt-2">Predicting...</p></div>';
+
+    try {
+        const res = await fetch(`${API_BASE}/5g/predict/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(get5GInput())
+        });
+        const data = await res.json();
+        render5GResult(endpoint, data);
+        addToHistory('5G', endpoint, get5GInput(), data);
+        document.getElementById('lastUpdate').textContent =
+            'Last updated: ' + new Date().toLocaleTimeString();
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="result-box error"><strong>❌ Error:</strong> ${err.message}<br><small>Make sure the API is running at ${API_BASE}</small></div>`;
+    }
+}
+
+// ── Render 5G Results ─────────────────────────────────────────────
+function render5GResult(endpoint, data) {
+    const resultDiv = document.getElementById('5g_result');
+    let html = '';
+
+    if (endpoint === 'slice') {
+        const sliceColors = { 'eMBB': 'blue', 'URLLC': 'purple', 'mIoT': 'green' };
+        const color = sliceColors[data.slice_name] || 'blue';
+        html = `
+            <div class="result-box">
+                <div class="text-2xl font-bold text-${color}-700 mb-2">
+                    ${data.slice_name}
+                    <span class="text-sm font-normal text-gray-500">(Type ${data.slice_type})</span>
+                </div>
+                <div class="text-lg text-gray-700 mb-3">Confidence: <strong>${(data.confidence * 100).toFixed(1)}%</strong></div>
+                <div class="text-sm font-medium text-gray-600 mb-2">Probability Distribution:</div>
+                ${Object.entries(data.probabilities).map(([k, v]) => `
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs w-12 text-gray-600">${k}</span>
+                        <div class="flex-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: ${(v*100).toFixed(1)}%"></div>
+                        </div>
+                        <span class="text-xs text-gray-600 w-10">${(v*100).toFixed(1)}%</span>
+                    </div>
+                `).join('')}
+            </div>`;
+
+    } else if (endpoint === 'sla_risk') {
+        const tierColors = { 'Low': 'green', 'Medium': 'yellow', 'High': 'orange', 'Critical': 'red' };
+        const color = tierColors[data.risk_tier] || 'gray';
+        html = `
+            <div class="result-box ${data.risk_tier === 'Critical' ? 'error' : data.risk_tier === 'High' ? 'warning' : ''}">
+                <div class="text-xl font-bold mb-2">
+                    Risk Tier: <span class="text-${color}-600">${data.risk_tier}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-gray-500">P(SLA Met)</div>
+                        <div class="text-2xl font-bold text-green-600">${(data.p_sla_met * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-gray-500">Risk Score</div>
+                        <div class="text-2xl font-bold text-red-500">${(data.qos_risk_score * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                <div class="mt-2 text-sm text-gray-600">
+                    SLA Prediction: <strong>${data.sla_prediction === 1 ? '✅ Met' : '❌ Violated'}</strong>
+                </div>
+            </div>`;
+
+    } else if (endpoint === 'anomaly') {
+        const isAnomaly = data.is_anomaly === 1;
+        html = `
+            <div class="result-box ${isAnomaly ? 'error' : ''}">
+                <div class="text-2xl font-bold mb-2 ${isAnomaly ? 'text-red-600' : 'text-green-600'}">
+                    ${isAnomaly ? '🚨 ANOMALY DETECTED' : '✅ NORMAL'}
+                </div>
+                <div class="text-sm text-gray-600 mb-2">Anomaly Score: <strong>${data.anomaly_score}</strong></div>
+                <div class="text-sm text-gray-600">Risk Tier: <strong>${data.risk_tier}</strong></div>
+                <div class="mt-2 bg-gray-200 rounded-full h-3">
+                    <div class="${isAnomaly ? 'bg-red-500' : 'bg-green-500'} h-3 rounded-full"
+                        style="width: ${(data.anomaly_score * 100).toFixed(0)}%"></div>
+                </div>
+            </div>`;
+
+    } else if (endpoint === 'online') {
+        html = `
+            <div class="result-box ${data.is_anomaly ? 'error' : ''}">
+                <div class="text-xl font-bold mb-2">
+                    HAT: ${data.is_anomaly ? '🚨 Anomaly' : '✅ Normal'}
+                </div>
+                <div class="text-sm text-gray-600">
+                    Anomaly Probability: <strong>${(data.anomaly_probability * 100).toFixed(1)}%</strong>
+                </div>
+            </div>`;
+
+    } else if (endpoint === 'xai') {
+        const sorted = Object.entries(data.shap_contributions)
+            .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+        html = `
+            <div class="result-box">
+                <div class="text-lg font-bold mb-1">Slice: ${data.slice_name} (${(data.confidence*100).toFixed(1)}%)</div>
+                <div class="text-sm text-blue-700 mb-3">🏆 Top factor: <strong>${data.top_feature}</strong></div>
+                <div class="text-sm font-medium text-gray-600 mb-2">SHAP Feature Contributions:</div>
+                ${sorted.map(([feat, val]) => `
+                    <div class="flex items-center gap-2 mb-1 text-xs">
+                        <span class="w-28 text-gray-600 truncate">${feat}</span>
+                        <div class="flex-1 bg-gray-100 rounded h-2 relative">
+                            <div class="${val >= 0 ? 'bg-green-400' : 'bg-red-400'} h-2 rounded"
+                                style="width: ${Math.min(Math.abs(val) * 500, 100)}%"></div>
+                        </div>
+                        <span class="w-14 text-right ${val >= 0 ? 'text-green-600' : 'text-red-600'}">${val > 0 ? '+' : ''}${val.toFixed(4)}</span>
+                    </div>
+                `).join('')}
+                <div class="mt-3 text-xs text-gray-500 italic">${data.explanation}</div>
+            </div>`;
+    }
+
+    resultDiv.innerHTML = html;
+}
+
+// ── 6G Predictions ────────────────────────────────────────────────
+async function predict6G(endpoint) {
+    const resultDiv = document.getElementById('6g_result');
+    resultDiv.innerHTML = '<div class="text-center py-8"><div class="text-2xl animate-spin">⚙️</div><p class="text-gray-400 mt-2">Predicting...</p></div>';
+
+    try {
+        const res = await fetch(`${API_BASE}/6g/predict/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(get6GInput())
+        });
+        const data = await res.json();
+        render6GResult(endpoint, data);
+        addToHistory('6G', endpoint, get6GInput(), data);
+        document.getElementById('lastUpdate').textContent =
+            'Last updated: ' + new Date().toLocaleTimeString();
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="result-box error"><strong>❌ Error:</strong> ${err.message}<br><small>Make sure the API is running at ${API_BASE}</small></div>`;
+    }
+}
+
+// ── Render 6G Results ─────────────────────────────────────────────
+function render6GResult(endpoint, data) {
+    const resultDiv = document.getElementById('6g_result');
+    let html = '';
+
+    if (endpoint === 'qos') {
+        const riskColors = { 'Low': 'green', 'Medium': 'yellow', 'High': 'orange', 'Critical': 'red' };
+        const color = riskColors[data.risk_level] || 'blue';
+        html = `
+            <div class="result-box ${data.risk_level === 'Critical' ? 'error' : data.risk_level === 'High' ? 'warning' : ''}">
+                <div class="text-3xl font-bold text-${color}-600 mb-2">
+                    ${(data.qos_probability * 100).toFixed(1)}%
+                </div>
+                <div class="text-sm text-gray-600 mb-1">QoS Probability</div>
+                <div class="bg-gray-200 rounded-full h-4 mb-3">
+                    <div class="${data.qos_probability >= 0.7 ? 'bg-green-500' : data.qos_probability >= 0.5 ? 'bg-yellow-500' : 'bg-red-500'} h-4 rounded-full transition-all"
+                        style="width: ${(data.qos_probability*100).toFixed(0)}%"></div>
+                </div>
+                <div class="text-sm text-gray-600">
+                    SLA: <strong>${data.sla_respected ? '✅ Respected' : '❌ Violated'}</strong> |
+                    Risk: <strong class="text-${color}-600">${data.risk_level}</strong>
+                </div>
+            </div>`;
+
+    } else if (endpoint === 'anomaly') {
+        html = `
+            <div class="result-box ${data.is_anomaly ? 'error' : ''}">
+                <div class="text-2xl font-bold mb-2 ${data.is_anomaly ? 'text-red-600' : 'text-green-600'}">
+                    ${data.is_anomaly ? '🚨 ANOMALY' : '✅ NORMAL'}
+                </div>
+                <div class="text-sm text-gray-600">Label: <strong>${data.anomaly_label}</strong></div>
+            </div>`;
+
+    } else if (endpoint === 'congestion') {
+        html = `
+            <div class="result-box ${data.congestion_class !== '0' ? 'warning' : ''}">
+                <div class="text-2xl font-bold mb-2">
+                    ${data.congestion_class === '0' ? '🟢 No Congestion' : '🔴 Congestion Detected'}
+                </div>
+                <div class="text-sm text-gray-600 mb-2">Class: <strong>${data.congestion_class}</strong></div>
+                <div class="text-sm text-gray-600">
+                    Confidence: <strong>${(data.congestion_probability * 100).toFixed(1)}%</strong>
+                </div>
+                <div class="bg-gray-200 rounded-full h-2 mt-2">
+                    <div class="bg-blue-500 h-2 rounded-full"
+                        style="width: ${(data.congestion_probability*100).toFixed(0)}%"></div>
+                </div>
+            </div>`;
+
+    } else if (endpoint === 'xai') {
+        const sorted = Object.entries(data.shap_contributions)
+            .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+        html = `
+            <div class="result-box">
+                <div class="text-lg font-bold mb-1">
+                    QoS: ${(data.qos_probability*100).toFixed(1)}%
+                    <span class="text-sm font-normal text-gray-500">(${data.risk_level} risk)</span>
+                </div>
+                <div class="text-sm text-blue-700 mb-3">🏆 Top factor: <strong>${data.top_factor}</strong></div>
+                <div class="text-sm font-medium text-gray-600 mb-2">SHAP Contributions:</div>
+                ${sorted.map(([feat, val]) => `
+                    <div class="flex items-center gap-2 mb-1 text-xs">
+                        <span class="w-32 text-gray-600 truncate">${feat}</span>
+                        <div class="flex-1 bg-gray-100 rounded h-2">
+                            <div class="${val >= 0 ? 'bg-green-400' : 'bg-red-400'} h-2 rounded"
+                                style="width: ${Math.min(Math.abs(val)*500, 100)}%"></div>
+                        </div>
+                        <span class="w-14 text-right ${val >= 0 ? 'text-green-600' : 'text-red-600'}">${val > 0 ? '+' : ''}${val.toFixed(4)}</span>
+                    </div>
+                `).join('')}
+                <div class="mt-3 text-xs text-gray-500 italic">${data.explanation}</div>
+            </div>`;
+    }
+
+    resultDiv.innerHTML = html;
+}
+
+// ── Model Status ──────────────────────────────────────────────────
+async function loadModelStatus() {
+    const div = document.getElementById('models_result');
+    div.innerHTML = '<div class="text-center py-4 text-gray-400">Loading...</div>';
+    try {
+        const res = await fetch(`${API_BASE}/models`);
+        const data = await res.json();
+        const rows = Object.entries(data).map(([name, status]) => {
+            const ok = status.includes('loaded');
+            return `
+                <div class="flex items-center justify-between p-3 border-b border-gray-100">
+                    <div class="font-mono text-sm text-gray-700">${name}</div>
+                    <span class="text-xs px-2 py-1 rounded-full ${ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                        ${ok ? '✅ Loaded' : '⚠️ Missing'}
+                    </span>
+                </div>`;
+        }).join('');
+        div.innerHTML = `<div class="divide-y divide-gray-100">${rows}</div>`;
+    } catch (err) {
+        div.innerHTML = `<div class="result-box error">❌ Cannot reach API: ${err.message}</div>`;
+    }
+}
+
+// ── History ───────────────────────────────────────────────────────
+function addToHistory(pipeline, endpoint, input, result) {
+    predictionHistory.unshift({
+        pipeline, endpoint,
+        time: new Date().toLocaleTimeString(),
+        input, result
+    });
+    if (predictionHistory.length > 20) predictionHistory.pop();
+}
+
+function renderHistory() {
+    const div = document.getElementById('history_container');
+    if (predictionHistory.length === 0) {
+        div.innerHTML = '<div class="text-center text-gray-400 py-8">No predictions yet</div>';
+        return;
+    }
+    div.innerHTML = predictionHistory.map((item, i) => `
+        <div class="card-style p-3 mb-2">
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="text-xs font-bold ${item.pipeline === '5G' ? 'text-blue-600' : 'text-purple-600'}">
+                        ${item.pipeline}
+                    </span>
+                    <span class="text-sm font-medium ml-2">/predict/${item.endpoint}</span>
+                </div>
+                <span class="text-xs text-gray-400">${item.time}</span>
+            </div>
+            <div class="text-xs text-gray-500 mt-1 font-mono truncate">
+                ${JSON.stringify(item.result).substring(0, 100)}...
+            </div>
+        </div>
+    `).join('');
+}
+
+function clearHistory() {
+    predictionHistory = [];
+    renderHistory();
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    checkHealth();
+    setInterval(checkHealth, 30000);
+});
+</script>
+</body>
+</html>

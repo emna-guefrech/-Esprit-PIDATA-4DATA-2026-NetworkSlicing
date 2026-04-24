@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+
+  backend:
+    image: emna_guefrech_4data_mlops3
+    container_name: network_slicing_backend
+    ports:
+      - "8000:8000"
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: emna_guefrech_frontend_4data_mlops3
+    container_name: network_slicing_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app_network
+    restart: unless-stopped
+
+networks:
+  app_network:
+    driver: bridge

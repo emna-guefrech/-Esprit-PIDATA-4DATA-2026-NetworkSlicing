@@ -1,0 +1,207 @@
+name: Manual CD Pipeline
+
+# ── Manual trigger only ───────────────────────────────────────────
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      run_training:
+        description: 'Run ML training steps'
+        required: true
+        default: 'true'
+        type: boolean
+
+jobs:
+
+  # ── Job 1: Build and push Docker images ──────────────────────────
+  build_and_push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build backend image
+        run: |
+          docker build -t emna239/emna_guefrech_4data_mlops3:latest \
+            -f shared_api/Dockerfile .
+          echo "✅ Backend image built"
+
+      - name: Push backend image
+        run: |
+          docker push emna239/emna_guefrech_4data_mlops3:latest
+          echo "✅ Backend pushed to Docker Hub"
+
+      - name: Build frontend image
+        run: |
+          docker build -t emna239/emna_guefrech_frontend_4data_mlops3:latest \
+            ./frontend
+          echo "✅ Frontend image built"
+
+      - name: Push frontend image
+        run: |
+          docker push emna239/emna_guefrech_frontend_4data_mlops3:latest
+          echo "✅ Frontend pushed to Docker Hub"
+
+  # ── Job 2: ML Training with MLflow ───────────────────────────────
+  ml_training:
+    name: ML Training & MLflow Logging
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    if: ${{ inputs.run_training == 'true' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy scikit-learn joblib matplotlib seaborn \
+                      xgboost river mlflow shap pytest
+
+      - name: Create fake datasets
+        run: |
+          python3 - <<'EOF'
+          import pandas as pd, numpy as np
+          np.random.seed(42)
+          n = 500
+          df5g = pd.DataFrame({
+              'Time': np.random.uniform(0, 23, n),
+              'Packet Loss Rate': np.random.choice([1e-6, 1e-3, 1e-2], n),
+              'Packet delay': np.random.choice([10, 50, 75, 100, 150, 300], n),
+              'LTE/5g Category': np.random.randint(1, 20, n),
+              'slice Type': np.random.choice([1, 2, 3], n),
+              'GBR': np.random.randint(0, 2, n),
+              'IoT': np.random.randint(0, 2, n),
+              'Non-GBR': np.random.randint(0, 2, n),
+              'LTE/5G': np.random.randint(0, 2, n),
+              'AR/VR/Gaming': np.random.randint(0, 2, n),
+              'Healthcare': np.random.randint(0, 2, n),
+              'Industry 4.0': np.random.randint(0, 2, n),
+              'IoT Devices': np.random.randint(0, 2, n),
+              'Public Safety': np.random.randint(0, 2, n),
+              'Smart City & Home': np.random.randint(0, 2, n),
+              'Smart Transportation': np.random.randint(0, 2, n),
+              'Smartphone': np.random.randint(0, 2, n),
+          })
+          df5g.to_csv('5g_pipeline/train_dataset.csv', index=False)
+          df5g.to_csv('5g_pipeline/test_dataset.csv', index=False)
+
+          n = 300
+          df6g = pd.DataFrame({
+              'Latency Budget (μs)': np.random.uniform(100, 500, n),
+              'Slice Latency (μs)': np.random.uniform(50, 400, n),
+              'Packet Loss Budget': np.random.uniform(0.001, 0.1, n),
+              'Slice Packet Loss': np.random.uniform(0.001, 0.1, n),
+              'Jitter Budget (μs)': np.random.uniform(10, 100, n),
+              'Slice Jitter (μs)': np.random.uniform(5, 80, n),
+              'Data Rate Budget (Gbps)': np.random.uniform(1, 10, n),
+              'Slice Available Transfer Rate (Gbps)': np.random.uniform(1, 12, n),
+              'Slice Type': np.random.choice(['feMBB','mURLLC','mbRLLC','umMTC','ERLLC'], n),
+              'congestion_class': np.random.choice(['0', '1'], n),
+              'SLA_Respected': np.random.randint(0, 2, n),
+              'Required Mobility': np.random.randint(0, 2, n),
+              'Required Connectivity': np.random.randint(0, 2, n),
+              'Latency_Stress_Ratio': np.random.uniform(0, 2, n),
+              'Bandwidth_Usage_Ratio': np.random.uniform(0, 1, n),
+              'Mobility_Jitter_Impact': np.random.uniform(0, 1, n),
+              'Efficiency_Index': np.random.uniform(0, 1, n),
+              'Aggregated_QoS_Score': np.random.uniform(0, 1, n),
+          })
+          df6g.to_csv('6g_pipeline/network_slicing_congestion_final.csv', index=False)
+          print("✅ All datasets created")
+          EOF
+
+      - name: Run 5G pipeline + MLflow
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action prepare
+          python3 main.py --action train_rf
+          python3 main.py --action evaluate_rf
+          python3 main.py --action train_xgb
+          python3 main.py --action evaluate_xgb
+          python3 main.py --action train_anomaly
+          python3 main.py --action evaluate_anomaly
+          python3 main.py --action train_online
+          python3 main.py --action evaluate_online
+          python3 main.py --action save
+        continue-on-error: true
+
+      - name: Run 6G pipeline + MLflow
+        run: |
+          cd 6g_pipeline
+          python3 main.py --step dso1
+          python3 main.py --step dso52
+          python3 main.py --step dso53
+          python3 main.py --step dso54
+        continue-on-error: true
+
+      - name: Upload MLflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-results
+          path: |
+            5g_pipeline/mlruns/
+            6g_pipeline/mlruns/
+            5g_pipeline/models/
+            6g_pipeline/models/
+          retention-days: 7
+
+  # ── Job 3: Deploy containers ──────────────────────────────────────
+  deploy:
+    name: Deploy Containers
+    runs-on: ubuntu-latest
+    needs: [build_and_push, ml_training]
+    if: always()
+
+    steps:
+      - name: Pull and run backend
+        run: |
+          docker pull emna239/emna_guefrech_4data_mlops3:latest
+          docker run -d --name backend \
+            -p 8000:8000 \
+            emna239/emna_guefrech_4data_mlops3:latest
+          sleep 10
+          curl -f http://localhost:8000/ && echo "✅ Backend healthy"
+
+      - name: Pull and run frontend
+        run: |
+          docker pull emna239/emna_guefrech_frontend_4data_mlops3:latest
+          docker run -d --name frontend \
+            -p 80:80 \
+            --link backend:backend \
+            emna239/emna_guefrech_frontend_4data_mlops3:latest
+          sleep 5
+          curl -f http://localhost:80 && echo "✅ Frontend healthy"
+
+      - name: Show running containers
+        run: docker ps
+
+      - name: Summary
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "✅ CD Pipeline Complete!"
+          echo "═══════════════════════════════════════"
+          echo "Backend  : emna239/emna_guefrech_4data_mlops3"
+          echo "Frontend : emna239/emna_guefrech_frontend_4data_mlops3"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "═══════════════════════════════════════"
