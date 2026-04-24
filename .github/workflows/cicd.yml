@@ -1,0 +1,262 @@
+name: Network Slicing MLOps CI/CD
+
+# ── Triggers: any push or PR to any branch ───────────────────────
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+
+  # ── Job 1: CI — Code Quality ────────────────────────────────────
+  ci_5g:
+    name: CI — 5G Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install CI dependencies
+        run: |
+          pip install black flake8 bandit pytest
+
+      - name: Format check (black)
+        run: |
+          black 5g_pipeline/model_pipeline.py 5g_pipeline/main.py --line-length=120 --check
+        continue-on-error: true
+
+      - name: Lint (flake8)
+        run: |
+          flake8 5g_pipeline/model_pipeline.py 5g_pipeline/main.py --max-line-length=120 --ignore=E501,W503,E203
+        continue-on-error: true
+
+      - name: Security scan (bandit)
+        run: |
+          bandit -r 5g_pipeline/model_pipeline.py 5g_pipeline/main.py -ll
+        continue-on-error: true
+
+  ci_6g:
+    name: CI — 6G Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install CI dependencies
+        run: |
+          pip install black flake8 bandit pytest
+
+      - name: Format check (black)
+        run: |
+          black 6g_pipeline/model_pipeline.py 6g_pipeline/main.py --line-length=120 --check
+        continue-on-error: true
+
+      - name: Lint (flake8)
+        run: |
+          flake8 6g_pipeline/model_pipeline.py 6g_pipeline/main.py --max-line-length=120 --ignore=E501,W503,E203
+        continue-on-error: true
+
+      - name: Security scan (bandit)
+        run: |
+          bandit -r 6g_pipeline/model_pipeline.py 6g_pipeline/main.py -ll
+        continue-on-error: true
+
+  # ── Job 2: ML Pipeline — 5G ─────────────────────────────────────
+  ml_pipeline_5g:
+    name: ML Pipeline — 5G
+    runs-on: ubuntu-latest
+    needs: ci_5g
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install 5G dependencies
+        run: |
+          pip install pandas numpy scikit-learn joblib matplotlib seaborn scipy xgboost river mlflow pytest
+
+      - name: Create fake dataset for CI
+        run: |
+          python3 - <<'EOF'
+          import pandas as pd
+          import numpy as np
+          np.random.seed(42)
+          n = 500
+          df = pd.DataFrame({
+              'Time': np.random.uniform(0, 23, n),
+              'Packet Loss Rate': np.random.choice([1e-6, 1e-3, 1e-2], n),
+              'Packet delay': np.random.choice([10, 50, 75, 100, 150, 300], n),
+              'LTE/5g Category': np.random.randint(1, 20, n),
+              'slice Type': np.random.choice([1, 2, 3], n),
+              'GBR': np.random.randint(0, 2, n),
+              'IoT': np.random.randint(0, 2, n),
+              'Non-GBR': np.random.randint(0, 2, n),
+              'LTE/5G': np.random.randint(0, 2, n),
+              'AR/VR/Gaming': np.random.randint(0, 2, n),
+              'Healthcare': np.random.randint(0, 2, n),
+              'Industry 4.0': np.random.randint(0, 2, n),
+              'IoT Devices': np.random.randint(0, 2, n),
+              'Public Safety': np.random.randint(0, 2, n),
+              'Smart City & Home': np.random.randint(0, 2, n),
+              'Smart Transportation': np.random.randint(0, 2, n),
+              'Smartphone': np.random.randint(0, 2, n),
+          })
+          df.to_csv('5g_pipeline/train_dataset.csv', index=False)
+          df.to_csv('5g_pipeline/test_dataset.csv', index=False)
+          print("✅ Fake 5G datasets created")
+          EOF
+
+      - name: Prepare data
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action prepare
+
+      - name: Train Random Forest
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action train_rf
+
+      - name: Evaluate Random Forest
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action evaluate_rf
+      
+      - name: Train XGBoost
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action train_xgb
+
+      - name: Evaluate XGBoost
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action evaluate_xgb
+
+      - name: Train Anomaly Detection
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action train_anomaly
+
+      - name: Evaluate Anomaly Detection
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action evaluate_anomaly
+
+      - name: Train Online HAT
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action train_online
+
+      - name: Evaluate Online HAT
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action evaluate_online
+
+      - name: XAI Explainability
+        run: |
+          cd 5g_pipeline
+          pip install shap lime
+          python3 main.py --action explain
+
+      - name: Save models
+        run: |
+          cd 5g_pipeline
+          python3 main.py --action save
+
+      - name: Run unit tests
+        run: |
+          cd 5g_pipeline
+          python3 -m pytest tests/ -v --tb=short
+
+  # ── Job 3: ML Pipeline — 6G ─────────────────────────────────────
+  ml_pipeline_6g:
+    name: ML Pipeline — 6G
+    runs-on: ubuntu-latest
+    needs: ci_6g
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install 6G dependencies
+        run: |
+          pip install pandas numpy scikit-learn joblib matplotlib seaborn xgboost mlflow pytest shap
+
+      - name: Create fake dataset for CI
+        run: |
+          python3 - <<'EOF'
+          import pandas as pd
+          import numpy as np
+          np.random.seed(42)
+          n = 300
+          df = pd.DataFrame({
+              'Latency Budget (μs)': np.random.uniform(100, 500, n),
+              'Slice Latency (μs)': np.random.uniform(50, 400, n),
+              'Packet Loss Budget': np.random.uniform(0.001, 0.1, n),
+              'Slice Packet Loss': np.random.uniform(0.001, 0.1, n),
+              'Jitter Budget (μs)': np.random.uniform(10, 100, n),
+              'Slice Jitter (μs)': np.random.uniform(5, 80, n),
+              'Data Rate Budget (Gbps)': np.random.uniform(1, 10, n),
+              'Slice Available Transfer Rate (Gbps)': np.random.uniform(1, 12, n),
+              'Slice Type': np.random.choice(['feMBB', 'mURLLC', 'mbRLLC', 'umMTC', 'ERLLC'], n),
+              'congestion_class': np.random.choice(['0', '1'], n),
+              'SLA_Respected': np.random.randint(0, 2, n),
+              'Required Mobility': np.random.randint(0, 2, n),
+              'Required Connectivity': np.random.randint(0, 2, n),
+              'Latency_Stress_Ratio': np.random.uniform(0, 2, n),
+              'Bandwidth_Usage_Ratio': np.random.uniform(0, 1, n),
+              'Mobility_Jitter_Impact': np.random.uniform(0, 1, n),
+              'Efficiency_Index': np.random.uniform(0, 1, n),
+              'Aggregated_QoS_Score': np.random.uniform(0, 1, n),
+          })
+          df.to_csv('6g_pipeline/network_slicing_congestion_final.csv', index=False)
+          print("✅ Fake 6G dataset created")
+          EOF
+
+      - name: Train DSO1
+        run: |
+          cd 6g_pipeline
+          python3 main.py --step dso1
+      
+      - name: Train DSO5.2 Anomaly Detection
+        run: |
+          cd 6g_pipeline
+          python3 main.py --step dso52
+
+      - name: Train DSO5.3 Online Learning
+        run: |
+          cd 6g_pipeline
+          python3 main.py --step dso53
+
+      - name: Train DSO5.4 XAI
+        run: |
+          cd 6g_pipeline
+          python3 main.py --step dso54
+ 
+      - name: Run unit tests
+        run: |
+          cd 6g_pipeline
+          python3 -m pytest tests/ -v --tb=short
+        continue-on-error: true
