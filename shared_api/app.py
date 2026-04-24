@@ -32,6 +32,19 @@ import numpy as np
 import pandas as pd
 import joblib
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+sys.path.insert(0, os.path.join(BASE_DIR, "..", "alerting"))
+try:
+    from alert_service import (
+        check_5g_sla_risk, check_5g_anomaly,
+        check_6g_qos, check_6g_anomaly, check_6g_congestion
+    )
+    ALERTS_ENABLED = True
+    print("[startup] ✅ Alert service loaded")
+except Exception as e:
+    ALERTS_ENABLED = False
+    print(f"[startup] ⚠️ Alert service not available: {e}")
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -294,25 +307,76 @@ def predict_5g_anomaly(inp: Input5G):
     if MODELS["5g_anomaly_models"] is None:
         raise HTTPException(status_code=503, detail="5G anomaly models not loaded.")
     try:
-        X = _build_5g_features(inp)
-        models = MODELS["5g_anomaly_models"]
+        # Build the full 23-feature vector
+        import numpy as np
+
+        # Engineer features using mp5g helper
+        row = pd.DataFrame([{
+            "Time":                 inp.time,
+            "Packet Loss Rate":     inp.plr,
+            "Packet delay":         inp.delay,
+            "LTE/5g Category":      inp.lte5g_cat,
+            "IoT":                  0,
+            "GBR":                  1,
+            "LTE/5G":               1,
+            "Non-GBR":              0,
+            "AR/VR/Gaming":         0,
+            "Healthcare":           0,
+            "Industry 4.0":         0,
+            "IoT Devices":          0,
+            "Public Safety":        0,
+            "Smart City & Home":    0,
+            "Smart Transportation": 0,
+            "Smartphone":           1,
+        }])
+
+        row_eng = mp5g._engineer_features_xgb(row)
+
+        NOISE_CONFIG   = mp5g.NOISE_CONFIG
+        inject_noise   = mp5g.inject_noise
+        row_noisy      = inject_noise(row_eng, NOISE_CONFIG, random_state=42)
+
+        # Build the exact 23 features the model expects
+        expected_features = [
+            "LTE/5g Category", "time_sin", "time_cos", "is_peak",
+            "log_plr", "log_delay", "qos_strictness",
+            "IoT", "GBR", "gbr_x_strict", "peak_x_strict",
+            "n_use_cases", "is_mc", "is_consumer", "is_industrial",
+            "AR/VR/Gaming", "Healthcare", "Industry 4.0", "IoT Devices",
+            "Public Safety", "Smart City & Home", "Smart Transportation",
+            "Smartphone"
+        ]
+
+        for col in expected_features:
+            if col not in row_noisy.columns:
+                row_noisy[col] = 0
+
+        X_raw = row_noisy[expected_features]
+        X_s   = MODELS["5g_anomaly_scaler"].transform(X_raw)
+
+        models    = MODELS["5g_anomaly_models"]
         threshold = MODELS["5g_anomaly_threshold"]
 
-        sIF = float(-models["if"].score_samples(X)[0])
-        sOC = float(-models["svm"].decision_function(X)[0])
-        sAE = float(np.mean((X - models["ae"].inverse_transform(
-            models["ae"].transform(X))) ** 2))
+        sIF = float(-models["if"].score_samples(X_s)[0])
+        sOC = float(-models["svm"].decision_function(X_s)[0])
+        sAE = float(np.mean((X_s - models["ae"].inverse_transform(
+            models["ae"].transform(X_s))) ** 2))
 
         scores = np.array([sIF, sOC, sAE])
         scores = (scores - scores.min()) / (scores.max() - scores.min() + 1e-9)
-        ens = float(scores.mean())
+        ens    = float(scores.mean())
 
         tier = "Low" if ens < 0.35 else ("Medium" if ens < 0.65 else "High")
-        return AnomalyOutput5G(
+
+        result = AnomalyOutput5G(
             anomaly_score=round(ens, 4),
             is_anomaly=int(ens >= threshold),
             risk_tier=tier,
         )
+        if ALERTS_ENABLED:
+            check_5g_anomaly(result.dict(), inp.dict())
+        return result
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -366,9 +430,58 @@ def predict_5g_sla_risk(inp: Input5G):
     if MODELS["5g_xgb_model"] is None:
         raise HTTPException(status_code=503, detail="5G XGBoost model not loaded.")
     try:
-        X = _build_5g_features(inp)
+        import pandas as pd
+        inject_noise    = mp5g.inject_noise
+        augment_features = mp5g.augment_features
+        NOISE_CONFIG    = mp5g.NOISE_CONFIG
+
+        # Build full feature row with all required columns
+        row = pd.DataFrame([{
+            "Time":                  inp.time,
+            "Packet Loss Rate":      inp.plr,
+            "Packet delay":          inp.delay,
+            "LTE/5g Category":       inp.lte5g_cat,
+            "IoT":                   0,
+            "GBR":                   1,
+            "Non-GBR":               0,
+            "LTE/5G":                1,
+            "AR/VR/Gaming":          0,
+            "Healthcare":            0,
+            "Industry 4.0":          0,
+            "IoT Devices":           0,
+            "Public Safety":         0,
+            "Smart City & Home":     0,
+            "Smart Transportation":  0,
+            "Smartphone":            1,
+        }])
+
+        # Apply noise injection and feature augmentation
+        row_noisy = inject_noise(row, NOISE_CONFIG, random_state=42)
+        row_aug   = augment_features(row_noisy)
+
+        # Get the exact 29 features the model expects
+        expected_features = [
+            "LTE/5g Category", "Time", "Packet Loss Rate", "Packet delay",
+            "IoT", "LTE/5G", "GBR", "Non-GBR",
+            "AR/VR/Gaming", "Healthcare", "Industry 4.0", "IoT Devices",
+            "Public Safety", "Smart City & Home", "Smart Transportation", "Smartphone",
+            "network_load_factor", "packet_delay_noisy", "packet_loss_noisy",
+            "qos_strictness", "load_induced_delay", "delay_margin",
+            "delay_margin_pct", "effective_loss_rate", "loss_margin",
+            "violation_risk_composite", "delay_margin_ok", "loss_margin_ok",
+            "n_margins_ok"
+        ]
+
+        # Add any missing columns with 0
+        for col in expected_features:
+            if col not in row_aug.columns:
+                row_aug[col] = 0
+
+        X = row_aug[expected_features]
+
         p_met = float(MODELS["5g_xgb_model"].predict_proba(X)[0][1])
         risk  = round(1 - p_met, 4)
+
         if risk < 0.10:
             tier = "Low"
         elif risk < 0.25:
@@ -377,14 +490,20 @@ def predict_5g_sla_risk(inp: Input5G):
             tier = "High"
         else:
             tier = "Critical"
-        return SLARiskOutput(
+
+        result = SLARiskOutput(
             p_sla_met=round(p_met, 4),
             qos_risk_score=risk,
             sla_prediction=int(p_met >= 0.5),
             risk_tier=tier,
         )
+        if ALERTS_ENABLED:
+            check_5g_sla_risk(result.dict(), inp.dict())
+        return result
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+        
 
 
 @app.post("/5g/retrain/xgb", response_model=RetrainOutput, tags=["5G Retrain"])
@@ -496,6 +615,10 @@ def predict_6g_qos(inp: Input6G):
             sla_respected=qos_prob >= 0.5,
             risk_level=risk,
         )
+        if ALERTS_ENABLED:
+            check_6g_qos(result.dict(), inp.dict())
+        return result
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -525,6 +648,11 @@ def predict_6g_anomaly(inp: Input6G):
             is_anomaly=int(pred == -1),
             anomaly_label=label,
         )
+
+        if ALERTS_ENABLED:
+            check_6g_anomaly(result.dict(), inp.dict())
+        return result
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -538,21 +666,71 @@ def predict_6g_congestion(inp: Input6G):
     if MODELS["6g_dso53_model"] is None:
         raise HTTPException(status_code=503, detail="6G DSO5.3 model not loaded.")
     try:
-        gaps = _build_6g_gaps(inp)
-        row = pd.DataFrame([gaps])
+        # Build the exact 15 features the DSO5.3 model expects
+        expected_features = [
+            "Packet Loss Budget",
+            "Latency Budget (μs)",
+            "Jitter Budget (μs)",
+            "Data Rate Budget (Gbps)",
+            "Required Mobility",
+            "Required Connectivity",
+            "Slice Available Transfer Rate (Gbps)",
+            "Slice Latency (μs)",
+            "Slice Packet Loss",
+            "Slice Jitter (μs)",
+            "Slice Type",
+            "Slice Handover",
+            "Latency_Stress_Ratio",
+            "Mobility_Jitter_Impact",
+            "Bandwidth_Usage_Ratio",
+        ]
 
-        X_scaled = MODELS["6g_dso53_scaler"].transform(row)
-        pred_enc = int(MODELS["6g_dso53_model"].predict(X_scaled)[0])
-        proba = MODELS["6g_dso53_model"].predict_proba(X_scaled)[0]
-        conf = float(proba[pred_enc])
+        # Build row from input
+        latency_stress = inp.slice_latency_us / (inp.latency_budget_us + 1e-9)
+        bandwidth_usage = inp.data_rate_budget_gbps / (
+            inp.slice_transfer_rate_gbps + 1e-9
+        )
+        mobility_jitter = inp.slice_jitter_us / (inp.jitter_budget_us + 1e-9)
 
-        le = MODELS["6g_dso53_encoder"]
+        row = pd.DataFrame([{
+            "Packet Loss Budget":                    inp.packet_loss_budget,
+            "Latency Budget (μs)":                   inp.latency_budget_us,
+            "Jitter Budget (μs)":                    inp.jitter_budget_us,
+            "Data Rate Budget (Gbps)":               inp.data_rate_budget_gbps,
+            "Required Mobility":                     0,
+            "Required Connectivity":                 1,
+            "Slice Available Transfer Rate (Gbps)":  inp.slice_transfer_rate_gbps,
+            "Slice Latency (μs)":                    inp.slice_latency_us,
+            "Slice Packet Loss":                     inp.slice_packet_loss,
+            "Slice Jitter (μs)":                     inp.slice_jitter_us,
+            "Slice Type":                            0,
+            "Slice Handover":                        0,
+            "Latency_Stress_Ratio":                  round(latency_stress, 4),
+            "Mobility_Jitter_Impact":                round(mobility_jitter, 4),
+            "Bandwidth_Usage_Ratio":                 round(bandwidth_usage, 4),
+        }])
+
+        X_scaled = MODELS["6g_dso53_scaler"].transform(row[expected_features])
+        pred_enc   = int(MODELS["6g_dso53_model"].predict(X_scaled)[0])
+        proba      = MODELS["6g_dso53_model"].predict_proba(X_scaled)[0]
+        model_classes = MODELS["6g_dso53_model"].classes_
+
+        # Find the index of pred_enc in model's classes array
+        class_idx = list(model_classes).index(pred_enc)
+        conf      = float(proba[class_idx])
+
+        # Convert encoded class to label safely
+        le         = MODELS["6g_dso53_encoder"]
         pred_label = str(le.inverse_transform([pred_enc])[0])
 
-        return CongestionOutput6G(
+        result = CongestionOutput6G(
             congestion_class=pred_label,
             congestion_probability=round(conf, 4),
         )
+        if ALERTS_ENABLED:
+            check_6g_congestion(result.dict(), inp.dict())
+        return result
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
