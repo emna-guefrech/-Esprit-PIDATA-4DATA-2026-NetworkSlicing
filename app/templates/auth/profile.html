@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Profil - Network Slicing Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user"></i> Mon Profil
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <!-- User Information -->
+                    <div class="mb-4">
+                        <h5>Informations Personnelles</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Nom d'utilisateur:</strong> {{ user.username }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Rôle:</strong> <span class="badge bg-info">{{ user.get_role_label() }}</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Statut:</strong>
+                                    {% if user.is_active %}
+                                        <span class="badge bg-success">Actif</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactif</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Membre depuis:</strong> {{ user.created_at.strftime('%d/%m/%Y') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Change Password Form -->
+                    <div>
+                        <h5>Changer le Mot de Passe</h5>
+                        <form method="POST" action="{{ url_for('auth.profile') }}">
+                            <div class="mb-3">
+                                <label for="old_password" class="form-label">Mot de passe actuel</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="old_password" name="old_password" required>
+                                    <button class="btn btn-outline-secondary toggle-password" type="button">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">Veuillez entrer votre mot de passe actuel pour confirmer.</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">Nouveau mot de passe</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                    <button class="btn btn-outline-secondary toggle-password" type="button">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">Minimum 12 caractères</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirmer le nouveau mot de passe</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                    <button class="btn btn-outline-secondary toggle-password" type="button">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Changer le mot de passe
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.toggle-password').forEach(button => {
+    button.addEventListener('click', function() {
+        const input = this.previousElementSibling;
+        const icon = this.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+});
+</script>
+{% endblock %}

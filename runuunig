@@ -1,0 +1,6 @@
+python run.py
+python setup_database.py 
+
+
+
+pip install -r requirements.txt

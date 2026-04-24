@@ -1,0 +1,353 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <!-- Left: OTP Verification Form -->
+        <div class="auth-card">
+            <!-- Header -->
+            <div class="auth-header">
+                <div class="auth-icon">✉️</div>
+                <h1>Vérifier votre Email</h1>
+                <p class="auth-subtitle">Confirmez votre adresse email</p>
+            </div>
+
+            <!-- Email Info -->
+            <div class="email-info">
+                <p>Un code OTP a été envoyé à :</p>
+                <p class="email-display">{{ email }}</p>
+            </div>
+
+            <!-- Development Info Box -->
+            <div class="dev-info-box">
+                <p style="font-size: 12px; color: #666; margin: 0;">
+                    💡 <strong>Mode Développement:</strong> Si l'email ne s'est pas envoyé,<br>
+                    vérifiez la console ou le fichier log pour le code OTP.
+                </p>
+            </div>
+
+            <!-- Form -->
+            <form method="POST" action="{{ url_for('auth.verify_email', username=username) }}" class="auth-form">
+                <!-- OTP Code Input -->
+                <div class="form-group">
+                    <label for="otp" class="form-label">
+                        <span class="icon">�</span>
+                        Code OTP (6 chiffres)
+                    </label>
+                    <input 
+                        type="text" 
+                        id="otp" 
+                        name="otp" 
+                        class="form-input otp-input"
+                        placeholder="000000"
+                        maxlength="6"
+                        pattern="\d{6}"
+                        inputmode="numeric"
+                        required
+                        autofocus
+                    >
+                    <small class="form-helper">Entrez les 6 chiffres reçus dans votre email</small>
+                </div>
+
+                <!-- Timer Info -->
+                <div class="timer-box">
+                    <span class="timer-icon">⏱️</span>
+                    <span>Le code expire dans <strong>10 minutes</strong></span>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary">
+                    <span class="btn-icon">✓</span>
+                    Vérifier le code
+                </button>
+            </form>
+
+            <!-- Footer Links -->
+            <div class="auth-footer">
+                <p>Vous n'avez pas reçu le code? <a href="{{ url_for('auth.signup') }}">Réessayer</a></p>
+            </div>
+        </div>
+
+        <!-- Right: Illustration -->
+        <div class="auth-illustration">
+            <div class="illustration-content">
+                <h2>Vérification!</h2>
+                <p>Nous vous avons envoyé un code à votre adresse email. Entrez-le ci-contre pour vérifier votre compte.</p>
+                <div class="illustration-features">
+                    <div class="feature">✓ Code valide 10 minutes</div>
+                    <div class="feature">✓ Sécurité maximale</div>
+                    <div class="feature">✓ Activation immédiate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .auth-wrapper {
+        width: 100%;
+        padding: 20px;
+    }
+
+    .auth-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        overflow: hidden;
+    }
+
+    .auth-card {
+        padding: 60px;
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .auth-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+    }
+
+    .auth-header h1 {
+        font-size: 32px;
+        color: #1a202c;
+        margin-bottom: 12px;
+        font-weight: 800;
+    }
+
+    .auth-subtitle {
+        color: #718096;
+    }
+
+    .email-info {
+        background: #f7fafc;
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        margin-bottom: 30px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .email-display {
+        color: #667eea;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+
+    .dev-info-box {
+        background: #fffaf0;
+        border: 1px solid #feebc8;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 24px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #4a5568;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .otp-input-wrapper {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-bottom: 24px;
+    }
+
+    .otp-digit {
+        width: 50px;
+        height: 60px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: #2d3748;
+        transition: all 0.2s;
+    }
+
+    .otp-digit:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s;
+        border: none;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #5a67d8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .auth-footer {
+        margin-top: 32px;
+        text-align: center;
+        font-size: 14px;
+        color: #718096;
+    }
+
+    .auth-footer a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 700;
+        transition: color 0.2s;
+    }
+
+    .auth-footer a:hover {
+        color: #764ba2;
+    }
+
+    .auth-illustration {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 48px;
+        color: white;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .illustration-content h2 {
+        font-size: 32px;
+        margin-bottom: 16px;
+        font-weight: 700;
+    }
+
+    .illustration-content p {
+        font-size: 16px;
+        opacity: 0.9;
+        margin-bottom: 32px;
+        line-height: 1.6;
+    }
+
+    .illustration-features {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .feature {
+        font-size: 14px;
+        font-weight: 500;
+        opacity: 0.9;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 16px;
+        font-family: 'Courier New', monospace;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        background-color: rgba(102, 126, 234, 0.02);
+    }
+
+    .form-helper {
+        font-size: 12px;
+        color: #718096;
+        margin-top: 8px;
+        display: block;
+    }
+
+    .timer-box {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 8px;
+        padding: 14px;
+        margin: 24px 0;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-size: 14px;
+        color: #2d3748;
+        font-weight: 500;
+    }
+
+    .timer-icon {
+        font-size: 18px;
+    }
+
+    @media (max-width: 768px) {
+        .auth-container {
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        .auth-card {
+            padding: 32px;
+        }
+
+        .auth-illustration {
+            display: none;
+        }
+
+        .auth-header h1 {
+            font-size: 28px;
+        }
+
+        .otp-input {
+            font-size: 24px;
+        }
+
+        .auth-card {
+            padding: 40px;
+        }
+    }
+</style>
+{% endblock %}

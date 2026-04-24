@@ -1,0 +1,105 @@
+# Flask Network Slicing Dashboard - Git Ignore
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Flask
+instance/
+.webassets-cache
+.pytest_cache/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+network_slicing.sql
+
+# Logs
+*.log
+logs/
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+temp/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Session files
+*.session
+cookies.txt
+
+# Build artifacts
+dist/
+build/
+
+# Dependencies cache
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Mail testing
+mailhog_data/
+
+# IDE files
+.vscode/settings.json
+.vscode/extensions.json
