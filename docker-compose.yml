@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: ms1_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: network_slicing
+    ports:
+      - "3306:3306"
+    volumes:
+      - ms1_mysql_data:/var/lib/mysql
+    networks:
+      - ms1_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: ms1_app
+    ports:
+      - "5001:5001"
+    environment:
+      DB_USER: root
+      DB_PASS: root
+      DB_HOST: mysql
+      DB_NAME: network_slicing
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ms1_network
+    restart: unless-stopped
+
+volumes:
+  ms1_mysql_data:
+
+networks:
+  ms1_network:
+    driver: bridge

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Prediction History{% endblock %}
+
+{% block content %}
+<div class="card-style p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-blue-800">📋 Prediction History</h2>
+        <span class="text-sm text-gray-500">{{ predictions|length }} records</span>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-blue-50 text-blue-800">
+                    <th class="px-4 py-3 text-left">ID</th>
+                    <th class="px-4 py-3 text-left">Slice ID</th>
+                    <th class="px-4 py-3 text-left">Congestion</th>
+                    <th class="px-4 py-3 text-left">QoS Score</th>
+                    <th class="px-4 py-3 text-left">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in predictions %}
+                <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors">
+                    <td class="px-4 py-3 text-gray-400 text-xs">{{ p.id }}</td>
+                    <td class="px-4 py-3 font-mono text-xs">{{ p.slice_id }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if p.congestion_level == 'Normal' %}badge-normal
+                            {% elif p.congestion_level == 'Light' %}badge-light
+                            {% else %}badge-critical{% endif %}">
+                            {{ p.congestion_level }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="font-medium
+                            {% if p.qos_score >= 0.7 %}text-green-600
+                            {% elif p.qos_score >= 0.4 %}text-yellow-600
+                            {% else %}text-red-600{% endif %}">
+                            {{ "%.4f"|format(p.qos_score) }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">
+                        {{ p.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-4 py-12 text-center text-gray-400">
+                        No predictions yet. Go to the dashboard to make predictions.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
