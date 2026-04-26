@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics - Anomaly Detection{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📈 Statistiques d'Anomalies</h2>
+    <p class="subtitle">Analyse et tendances</p>
+</div>
+
+<div class="stats-filters">
+    <div class="filter-group">
+        <label>Slice ID (optionnel):</label>
+        <input type="text" id="statsSliceId" placeholder="Ex: slice_001" class="filter-input">
+    </div>
+    <div class="filter-group">
+        <label>Nombre de jours:</label>
+        <input type="number" id="statsDays" value="7" min="1" max="90" class="filter-input">
+    </div>
+    <button id="statsLoadBtn" class="btn btn-primary">Charger Statistiques</button>
+</div>
+
+<div class="stats-container">
+    <!-- Summary Stats -->
+    <section class="stats-summary">
+        <div class="stat-card">
+            <div class="stat-value" id="totalDetections">0</div>
+            <div class="stat-label">Détections totales</div>
+        </div>
+        <div class="stat-card highlight">
+            <div class="stat-value" id="totalAnomalies">0</div>
+            <div class="stat-label">Anomalies détectées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="anomalyRate">0%</div>
+            <div class="stat-label">Taux d'anomalie</div>
+        </div>
+    </section>
+
+    <!-- By Slice Stats -->
+    <section class="stats-section">
+        <h3>Anomalies par Slice</h3>
+        <div id="bySliceContainer" class="stats-grid">
+            <p class="loading-state">Chargement...</p>
+        </div>
+    </section>
+
+    <!-- By Method Stats -->
+    <section class="stats-section">
+        <h3>Anomalies par Méthode</h3>
+        <div id="byMethodContainer" class="stats-grid">
+            <p class="loading-state">Chargement...</p>
+        </div>
+    </section>
+
+    <!-- By Period Chart -->
+    <section class="stats-section">
+        <h3>Anomalies par Période</h3>
+        <canvas id="periodChart" width="800" height="200"></canvas>
+    </section>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/stats.js') }}"></script>
+{% endblock %}

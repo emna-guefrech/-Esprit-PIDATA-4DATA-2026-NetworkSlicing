@@ -1,0 +1,648 @@
+/* ========================================
+   Style Global - Network Slicing Dashboard
+   ======================================== */
+
+:root {
+    --primary-color: #1e5ba8;
+    --primary-light: #e3f2fd;
+    --accent-color: #00bcd4;
+    --success-color: #4caf50;
+    --warning-color: #ff9800;
+    --danger-color: #f44336;
+    --dark-bg: #0d47a1;
+    --light-bg: #ecf4fc;
+    --card-bg: #ffffff;
+    --border-color: #e0e0e0;
+    --text-dark: #333333;
+    --text-light: #666666;
+    --text-muted: #999999;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+body {
+    background: linear-gradient(135deg, var(--light-bg) 0%, #e1f5fe 100%);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========================================
+   Navbar
+   ======================================== */
+
+.navbar {
+    background: linear-gradient(to right, var(--dark-bg), var(--primary-color));
+    color: white;
+    padding: 1rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-brand h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.navbar-brand .subtitle {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.navbar-nav {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.3s;
+}
+
+.nav-link:hover {
+    opacity: 0.8;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--success-color);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ========================================
+   Layout
+   ======================================== */
+
+.container {
+    flex: 1;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+main {
+    flex: 1;
+}
+
+.footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-light);
+    border-top: 1px solid var(--border-color);
+    background: white;
+    margin-top: auto;
+}
+
+/* ========================================
+   Dashboard
+   ======================================== */
+
+.dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.dashboard-header h2 {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-header .subtitle {
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+.last-updated {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    text-align: right;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dashboard-section {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-light);
+}
+
+.dashboard-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ========================================
+   Slices Container
+   ======================================== */
+
+.slices-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.slice-card {
+    background: #f9f9f9;
+    border-left: 4px solid var(--primary-color);
+    padding: 1rem;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.slice-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.slice-card.degraded {
+    border-left-color: var(--warning-color);
+    background: rgba(255, 152, 0, 0.05);
+}
+
+.slice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.slice-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-dark);
+}
+
+.slice-ue-count {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    text-align: right;
+}
+
+.slice-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-active {
+    background: var(--success-color);
+    color: white;
+}
+
+.badge-degraded {
+    background: var(--warning-color);
+    color: white;
+}
+
+.badge-critical {
+    background: var(--danger-color);
+    color: white;
+}
+
+.slice-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.75rem;
+}
+
+.metric {
+    text-align: center;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.metric-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+/* ========================================
+   Alert Card
+   ======================================== */
+
+.alert-card, .threshold-card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.alerts-container {
+    min-height: 100px;
+}
+
+.alert-item {
+    padding: 0.75rem;
+    background: #fff3cd;
+    border-left: 3px solid var(--warning-color);
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.alert-item.critical {
+    background: #f8d7da;
+    border-left-color: var(--danger-color);
+}
+
+.no-alerts {
+    text-align: center;
+    color: var(--text-light);
+    padding: 1rem 0;
+}
+
+/* ========================================
+   Threshold Configuration
+   ======================================== */
+
+.threshold-config {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.threshold-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.threshold-item:last-child {
+    border-bottom: none;
+}
+
+.threshold-item label {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.threshold-values {
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+/* ========================================
+   Page Header
+   ======================================== */
+
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.page-header h2 {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.page-header .subtitle {
+    color: var(--text-light);
+}
+
+/* ========================================
+   Filters
+   ======================================== */
+
+.filters-section, .stats-filters {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-weight: 500;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+
+.filter-input {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(30, 91, 168, 0.1);
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+
+.btn {
+    padding: 0.5rem 1.25rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    font-family: inherit;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #154399;
+    box-shadow: 0 2px 8px rgba(30, 91, 168, 0.3);
+}
+
+.btn-secondary {
+    background: #f0f0f0;
+    color: var(--text-dark);
+}
+
+.btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+/* ========================================
+   History Table
+   ======================================== */
+
+.history-section {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-info {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+}
+
+.history-table thead {
+    background: var(--primary-light);
+}
+
+.history-table th {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.history-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.history-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.loading-state {
+    text-align: center;
+    color: var(--text-light);
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* ========================================
+   Pagination
+   ======================================== */
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+#pageInfo {
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+/* ========================================
+   Statistics
+   ======================================== */
+
+.stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-top: 4px solid var(--primary-color);
+}
+
+.stat-card.highlight {
+    border-top-color: var(--danger-color);
+    background: rgba(244, 67, 54, 0.05);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.stat-card.highlight .stat-value {
+    color: var(--danger-color);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-top: 0.5rem;
+}
+
+.stats-section {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stats-section h3 {
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-light);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.stats-grid .stat-card {
+    padding: 1rem;
+    border-top: 2px solid var(--primary-color);
+}
+
+/* ========================================
+   Chart
+   ======================================== */
+
+#periodChart {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .navbar-container {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .navbar-nav {
+        gap: 1rem;
+    }
+
+    .slice-metrics {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .filters-section {
+        grid-template-columns: 1fr;
+    }
+
+    .history-table {
+        font-size: 0.85rem;
+    }
+
+    .history-table th, .history-table td {
+        padding: 0.5rem;
+    }
+}
+
+/* ========================================
+   Utility Classes
+   ======================================== */
+
+.text-center {
+    text-align: center;
+}
+
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }

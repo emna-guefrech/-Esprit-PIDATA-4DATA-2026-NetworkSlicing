@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Anomaly Detection{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h2>Network Slicing Dashboard</h2>
+    <p class="subtitle">MS-3 Service - Real-time Monitoring</p>
+    <div class="last-updated" id="lastUpdated">Last updated: --:--:--</div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Active Slices Section -->
+    <section class="dashboard-section">
+        <h3 class="section-title">
+            📊 Active Network Slices
+        </h3>
+        <div id="slicesContainer" class="slices-container">
+            <div class="loading-state">Chargement des données...</div>
+        </div>
+    </section>
+
+    <!-- Active Alerts Section -->
+    <aside class="dashboard-sidebar">
+        <!-- Alerts -->
+        <section class="alert-card">
+            <h3 class="section-title">⚠️ Active Alerts</h3>
+            <div id="alertsContainer" class="alerts-container">
+                <p class="no-alerts">No active alerts</p>
+            </div>
+        </section>
+
+        <!-- Threshold Configuration -->
+        <section class="threshold-card">
+            <h3 class="section-title">⚙️ Threshold Configuration</h3>
+            <div class="threshold-config">
+                <div class="threshold-item">
+                    <label>bandwidth</label>
+                    <span class="threshold-values">Warn: 70 | Critical: 50</span>
+                </div>
+                <div class="threshold-item">
+                    <label>latency</label>
+                    <span class="threshold-values">Warn: 20 | Critical: 50</span>
+                </div>
+                <div class="threshold-item">
+                    <label>packet_loss</label>
+                    <span class="threshold-values">Warn: 0.02 | Critical: 0.05</span>
+                </div>
+                <div class="threshold-item">
+                    <label>jitter</label>
+                    <span class="threshold-values">Warn: 3 | Critical: 5</span>
+                </div>
+            </div>
+        </section>
+    </aside>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
