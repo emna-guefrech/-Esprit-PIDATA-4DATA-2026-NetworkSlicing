@@ -6,6 +6,10 @@
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-bold text-blue-800">📋 Prediction History</h2>
         <span class="text-sm text-gray-500">{{ predictions|length }} records</span>
+        <a href="/predict/export"
+           class="button-primary text-white px-4 py-2 rounded-lg text-sm">
+            ⬇️ Export CSV
+        </a>
     </div>
 
     <div class="overflow-x-auto">
@@ -55,4 +59,44 @@
         </table>
     </div>
 </div>
+<!-- QoS Chart -->
+<div class="card-style p-6 mt-6">
+    <h2 class="text-xl font-bold text-blue-800 mb-4">📈 QoS Score Trend</h2>
+    <canvas id="qosChart" height="80"></canvas>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Build chart from prediction data
+const labels = {{ predictions[-20:]|map(attribute='created_at')|
+                   map(attribute='created_at')|map('string')|list|tojson }};
+const scores = {{ predictions[-20:]|map(attribute='qos_score')|list|tojson }};
+
+new Chart(document.getElementById('qosChart'), {
+    type: 'line',
+    data: {
+        labels: labels.reverse(),
+        datasets: [{
+            label: 'QoS Score',
+            data: scores.reverse(),
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59,130,246,0.1)',
+            fill: true,
+            tension: 0.4,
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { min: 0, max: 1,
+                 ticks: { callback: v => (v*100).toFixed(0)+'%' } }
+        },
+        plugins: {
+            legend: { display: false }
+        }
+    }
+});
+</script>
 {% endblock %}

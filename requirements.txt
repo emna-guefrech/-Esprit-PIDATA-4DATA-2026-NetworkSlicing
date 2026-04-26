@@ -7,3 +7,4 @@ pandas==2.2.2
 scikit-learn==1.8.0
 xgboost==2.1.0
 cryptography==41.0.0
+requests

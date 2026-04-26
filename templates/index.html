@@ -6,8 +6,9 @@
 <!-- Stats row -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     <div class="card-style p-5 text-center">
-        <div class="text-3xl font-bold text-blue-700">{{ total }}</div>
+        <div class="text-3xl font-bold text-blue-700" id="total-count">{{ total }}</div>
         <div class="text-sm text-gray-500 mt-1">Total Predictions</div>
+        <div class="text-xs text-gray-400 mt-1" id="last-refresh">Live</div>
     </div>
     <div class="card-style p-5 text-center">
         <div class="text-3xl font-bold text-green-600">{{ normal }}</div>
@@ -283,6 +284,17 @@ function renderResult(data) {
         </div>`;
 
     resultDiv.innerHTML = html;
-}
+} 
+// Auto-refresh stats every 30 seconds
+setInterval(async () => {
+    try {
+        const res  = await fetch('/predict/history?limit=5');
+        const data = await res.json();
+        document.getElementById('total-count').textContent = data.total;
+        document.getElementById('last-refresh').textContent =
+            'Last refresh: ' + new Date().toLocaleTimeString();
+    } catch(e) {}
+}, 30000);
+
 </script>
 {% endblock %}

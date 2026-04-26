@@ -18,6 +18,13 @@ import joblib
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from models import db, Prediction, ModelVersion
+try:
+    from alert_service import send_alert
+    ALERTS_ENABLED = True
+    print("[Alert] ✅ Alert service loaded")
+except Exception as e:
+    ALERTS_ENABLED = False
+    print(f"[Alert] ⚠️ Alert service not available: {e}")
 
 # ── App setup ─────────────────────────────────────────────────────
 app = Flask(__name__)
@@ -81,16 +88,21 @@ def build_5g_features(data: dict) -> pd.DataFrame:
     time  = data.get("time", 14)
     cat   = data.get("lte5g_cat", 14)
 
-    network_load_factor      = plr * delay
-    packet_delay_noisy       = delay * 1.0
-    packet_loss_noisy        = plr * 1.0
-    qos_strictness           = 1 / (delay + 1e-9)
-    load_induced_delay       = network_load_factor * 10
+    # More realistic network load calculation
+    is_peak             = 1 if (8 <= time <= 10 or 18 <= time <= 21) else 0
+    network_load_factor = min(
+        0.15 + is_peak * 0.25 + (plr / 0.01) * 0.08 + (delay / 300) * 0.12,
+        1.0
+    )
+    packet_delay_noisy       = delay * (1 + network_load_factor * 0.12)
+    packet_loss_noisy        = plr   * (1 + network_load_factor * 0.10)
+    qos_strictness           = (1 / (delay + 1e-9)) + plr * 10
+    load_induced_delay       = network_load_factor * 100
     delay_margin             = 500 - delay
-    delay_margin_pct         = delay_margin / 500
-    effective_loss_rate      = plr * (1 + network_load_factor)
+    delay_margin_pct         = delay_margin / 500 if delay < 500 else 0
+    effective_loss_rate      = packet_loss_noisy * (1 + network_load_factor)
     loss_margin              = 0.05 - plr
-    violation_risk_composite = (plr * 0.5) + ((delay / 500) * 0.5)
+    violation_risk_composite = (plr / 0.01) * 0.5 + (delay / 300) * 0.5
     delay_margin_ok          = 1 if delay_margin > 0 else 0
     loss_margin_ok           = 1 if loss_margin > 0 else 0
     n_margins_ok             = delay_margin_ok + loss_margin_ok
@@ -112,25 +124,22 @@ def build_5g_features(data: dict) -> pd.DataFrame:
         "Smart City & Home":        0,
         "Smart Transportation":     0,
         "Smartphone":               1,
-        "network_load_factor":      network_load_factor,
-        "packet_delay_noisy":       packet_delay_noisy,
-        "packet_loss_noisy":        packet_loss_noisy,
-        "qos_strictness":           qos_strictness,
-        "load_induced_delay":       load_induced_delay,
-        "delay_margin":             delay_margin,
-        "delay_margin_pct":         delay_margin_pct,
-        "effective_loss_rate":      effective_loss_rate,
-        "loss_margin":              loss_margin,
-        "violation_risk_composite": violation_risk_composite,
+        "network_load_factor":      round(network_load_factor, 4),
+        "packet_delay_noisy":       round(packet_delay_noisy, 4),
+        "packet_loss_noisy":        round(packet_loss_noisy, 6),
+        "qos_strictness":           round(qos_strictness, 6),
+        "load_induced_delay":       round(load_induced_delay, 4),
+        "delay_margin":             round(delay_margin, 4),
+        "delay_margin_pct":         round(delay_margin_pct, 4),
+        "effective_loss_rate":      round(effective_loss_rate, 6),
+        "loss_margin":              round(loss_margin, 6),
+        "violation_risk_composite": round(violation_risk_composite, 4),
         "delay_margin_ok":          delay_margin_ok,
         "loss_margin_ok":           loss_margin_ok,
         "n_margins_ok":             n_margins_ok,
     }])
-    
 
-  
-  
-
+   
 def build_congestion_features(data: dict) -> pd.DataFrame:
     """Build the 15 features for the congestion classifier."""
     latency_stress  = data["slice_latency"] / (data["latency_budget"] + 1e-9)
@@ -229,6 +238,21 @@ def predict_qos():
         )
         db.session.add(pred)
         db.session.commit()
+        # Trigger alert if Critical
+        if ALERTS_ENABLED and congestion == "Critical":
+            send_alert(
+                subject=f"🚨 Critical QoS Alert — Slice {slice_id}",
+                body=(
+                    f"Slice ID      : {slice_id}\n"
+                    f"QoS Score     : {qos_score:.1%}\n"
+                    f"SLA Respected : {'✅ Yes' if qos_score >= 0.5 else '❌ No'}\n"
+                    f"Risk Level    : Critical\n\n"
+                    f"Latency Budget : {data.get('latency_budget')} μs\n"
+                    f"Slice Latency  : {data.get('slice_latency')} μs\n\n"
+                    f"⚠️ Immediate action required!"
+                ),
+                level="CRITICAL"
+            )
 
         return jsonify({
             "slice_id":         slice_id,
@@ -261,21 +285,20 @@ def predict_qos_5g():
         if X is None:
             return jsonify({"error": "Could not build 5G features"}), 500
 
-        # Bypass CalibratedClassifierCV, use base XGBoost estimator directly
         cc        = model_qos_5g.calibrated_classifiers_[0]
         raw       = float(cc.estimator.predict(X.values)[0])
         qos_score = float(np.clip(raw, 0, 1))
         qos_score = round(qos_score, 4)
         risk      = round(1 - qos_score, 4)
 
-        if risk < 0.10:
-            tier = "Low"
-        elif risk < 0.25:
-            tier = "Medium"
-        elif risk < 0.50:
-            tier = "High"
-        else:
+        if risk >= 0.35:
             tier = "Critical"
+        elif risk >= 0.20:
+            tier = "High"
+        elif risk >= 0.10:
+            tier = "Medium"
+        else:
+            tier = "Low"
 
         congestion = qos_to_congestion_level(qos_score)
 
@@ -288,6 +311,25 @@ def predict_qos_5g():
         )
         db.session.add(pred)
         db.session.commit()
+        # Trigger alert if Critical
+        if ALERTS_ENABLED and congestion == "Critical":
+            send_alert(
+                subject=f"🚨 5G Critical QoS Alert — Slice {slice_id}",
+                body=(
+                    f"Pipeline      : 5G\n"
+                    f"Slice ID      : {slice_id}\n"
+                    f"QoS Score     : {qos_score:.1%}\n"
+                    f"P(SLA Met)    : {qos_score:.1%}\n"
+                    f"Risk Score    : {risk:.1%}\n"
+                    f"Risk Tier     : {tier}\n"
+                    f"SLA Respected : {'✅ Yes' if qos_score >= 0.5 else '❌ No'}\n\n"
+                    f"Input — Time  : {data.get('time')}h\n"
+                    f"Input — PLR   : {data.get('plr')}\n"
+                    f"Input — Delay : {data.get('delay')} ms\n\n"
+                    f"⚠️ 5G SLA violation detected — immediate action required!"
+                ),
+                level="CRITICAL" if tier == "Critical" else "WARNING"
+            )
 
         return jsonify({
             "slice_id":         slice_id,
@@ -342,6 +384,19 @@ def predict_congestion():
         )
         db.session.add(pred)
         db.session.commit()
+        # Alert if Critical
+        if ALERTS_ENABLED and congestion == "Critical":
+            send_alert(
+                subject=f"🚨 Congestion Critical — Slice {slice_id}",
+                body=(
+                    f"Slice ID         : {slice_id}\n"
+                    f"Congestion Level : Critical\n"
+                    f"Confidence       : {confidence:.1%}\n"
+                    f"Raw Class        : {raw_label}\n\n"
+                    f"🔴 Network congestion requires immediate attention!"
+                ),
+                level="CRITICAL"
+            )
 
         return jsonify({
             "slice_id":         slice_id,
@@ -353,6 +408,126 @@ def predict_congestion():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/predict/batch", methods=["POST"])
+def predict_batch():
+    """
+    Predict QoS for multiple slices at once.
+    Input: {"slices": [...list of slice metrics...]}
+    Output: list of predictions
+    """
+    data   = request.get_json()
+    slices = data.get("slices", [])
+
+    if not slices:
+        return jsonify({"error": "No slices provided"}), 400
+
+    results = []
+    for item in slices:
+        try:
+            X          = build_qos_features(item)
+            qos_raw    = float(model_qos_6g.predict(X)[0])
+            qos_score  = float(np.clip(qos_raw, 0, 1))
+            congestion = qos_to_congestion_level(qos_score)
+
+            pred = Prediction(
+                slice_id         = item.get("slice_id", "batch"),
+                congestion_level = congestion,
+                qos_score        = round(qos_score, 4),
+                features_json    = json.dumps(item),
+            )
+            db.session.add(pred)
+            db.session.add(pred)
+
+            # Alert if Critical
+            if ALERTS_ENABLED and congestion == "Critical":
+                send_alert(
+                    subject=f"🚨 Batch Critical Alert — Slice {item.get('slice_id')}",
+                    body=(
+                        f"Slice ID      : {item.get('slice_id')}\n"
+                        f"QoS Score     : {qos_score:.1%}\n"
+                        f"Congestion    : Critical\n"
+                        f"SLA Respected : ❌ No\n\n"
+                        f"Detected in batch prediction of {len(slices)} slices."
+                    ),
+                    level="CRITICAL"
+                )
+
+            results.append({
+                "slice_id":         item.get("slice_id"),
+                "qos_score":        round(qos_score, 4),
+                "congestion_level": congestion,
+                "sla_respected":    qos_score >= 0.5,
+            })
+        except Exception as e:
+            results.append({"slice_id": item.get("slice_id"), "error": str(e)})
+
+    db.session.commit()
+    return jsonify({
+        "total":    len(results),
+        "results":  results,
+        "critical": sum(1 for r in results if r.get("congestion_level") == "Critical"),
+        "normal":   sum(1 for r in results if r.get("congestion_level") == "Normal"),
+    })
+
+@app.route("/predict/stats")
+def predict_stats():
+    """Return prediction statistics."""
+    from sqlalchemy import func
+
+    total    = Prediction.query.count()
+    by_level = db.session.query(
+        Prediction.congestion_level,
+        func.count(Prediction.id)
+    ).group_by(Prediction.congestion_level).all()
+
+    avg_qos  = db.session.query(func.avg(Prediction.qos_score)).scalar()
+    min_qos  = db.session.query(func.min(Prediction.qos_score)).scalar()
+    max_qos  = db.session.query(func.max(Prediction.qos_score)).scalar()
+
+    return jsonify({
+        "total_predictions": total,
+        "by_congestion_level": {
+            level: count for level, count in by_level
+        },
+        "qos_stats": {
+            "average": round(float(avg_qos), 4) if avg_qos else 0,
+            "min":     round(float(min_qos), 4) if min_qos else 0,
+            "max":     round(float(max_qos), 4) if max_qos else 0,
+        },
+        "sla_compliance_rate": round(
+            Prediction.query.filter(Prediction.qos_score >= 0.5).count()
+            / max(total, 1) * 100, 1
+        ),
+    })
+
+import csv
+import io
+from flask import Response
+
+@app.route("/predict/export")
+def export_csv():
+    """Export all predictions as CSV."""
+    predictions = Prediction.query.order_by(
+        Prediction.created_at.desc()
+    ).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "slice_id", "congestion_level",
+                     "qos_score", "created_at"])
+    for p in predictions:
+        writer.writerow([p.id, p.slice_id, p.congestion_level,
+                         p.qos_score,
+                         p.created_at.strftime("%Y-%m-%d %H:%M:%S")])
+
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition":
+                 "attachment; filename=predictions.csv"}
+    )
 
 @app.route("/predict/history", methods=["GET"])
 def predict_history():
