@@ -1,0 +1,8 @@
+# MS-3: Dashboard & Alerts Service Dependencies
+# Network Slicing Microservice - Dashboard & Alerts (MS-3)
+
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+# PyMySQL==1.1.0  # Uncomment for MySQL production
+requests==2.31.0
+Werkzeug==2.3.7

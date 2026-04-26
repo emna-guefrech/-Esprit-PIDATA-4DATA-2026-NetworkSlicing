@@ -1,0 +1,42 @@
+# Virtual environments
+5g_pipeline/venv/
+6g_pipeline/venv/
+shared_api/venv/
+monitoring/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Large model files
+*.pkl
+*.joblib
+*.npy
+
+# MLflow
+mlruns/
+5g_pipeline/mlflow.db
+6g_pipeline/mlflow.db
+
+# Jupyter
+*.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Docker
+*.tar
+
+# Virtual environments
+.venv/
+venv/
+*/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Archives
+*.tar

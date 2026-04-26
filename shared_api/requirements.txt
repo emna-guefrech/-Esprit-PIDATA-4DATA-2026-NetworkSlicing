@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+joblib
+numpy
+pandas
+scikit-learn
+xgboost
+river
+shap
+mlflow
