@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+{% block title %}MS-5 Model Management Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Stats row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-purple-700">{{ total_versions }}</div>
+        <div class="text-sm text-gray-500 mt-1">Model Versions</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-green-600">{{ total_retrains }}</div>
+        <div class="text-sm text-gray-500 mt-1">Retraining Runs</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-blue-600">5</div>
+        <div class="text-sm text-gray-500 mt-1">Active Models</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-yellow-600" id="drift-count">—</div>
+        <div class="text-sm text-gray-500 mt-1">Drift Alerts</div>
+    </div>
+</div>
+
+<!-- Main grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <!-- Model Metrics Table -->
+    <div class="card-style p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-purple-800">📊 Model Metrics</h2>
+            <button onclick="loadMetrics()"
+                class="button-primary text-white px-3 py-1 rounded-lg text-xs">
+                🔄 Refresh
+            </button>
+        </div>
+        <div id="metrics-container">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-purple-50 text-purple-800">
+                        <th class="px-3 py-2 text-left">Model</th>
+                        <th class="px-3 py-2 text-left">Version</th>
+                        <th class="px-3 py-2 text-left">R²</th>
+                        <th class="px-3 py-2 text-left">RMSE</th>
+                        <th class="px-3 py-2 text-left">Accuracy</th>
+                    </tr>
+                </thead>
+                <tbody id="metrics-tbody">
+                    {% for v in versions[:5] %}
+                    <tr class="border-b border-gray-100 hover:bg-purple-50">
+                        <td class="px-3 py-2 text-xs font-medium">{{ v.model_name }}</td>
+                        <td class="px-3 py-2 text-xs text-gray-500">v{{ v.version }}</td>
+                        <td class="px-3 py-2 text-xs font-mono
+                            {% if v.r2_score and v.r2_score >= 0.95 %}text-green-600
+                            {% elif v.r2_score %}text-yellow-600
+                            {% else %}text-gray-400{% endif %}">
+                            {{ "%.4f"|format(v.r2_score) if v.r2_score else "N/A" }}
+                        </td>
+                        <td class="px-3 py-2 text-xs font-mono text-blue-600">
+                            {{ "%.4f"|format(v.rmse) if v.rmse else "N/A" }}
+                        </td>
+                        <td class="px-3 py-2 text-xs font-mono
+                            {% if v.accuracy and v.accuracy >= 0.9 %}text-green-600
+                            {% elif v.accuracy %}text-yellow-600
+                            {% else %}text-gray-400{% endif %}">
+                            {{ "%.1f"|format(v.accuracy * 100) ~ "%" if v.accuracy else "N/A" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Retrain Panel -->
+    <div class="card-style p-6">
+        <h2 class="text-lg font-bold text-purple-800 mb-4">🔁 Retrain Model</h2>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Model Name</label>
+                <select id="retrain_model" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    <option value="XGBoost_QoS_6G">XGBoost QoS 6G</option>
+                    <option value="XGBoost_QoS_5G">XGBoost QoS 5G</option>
+                    <option value="RandomForest_5G">Random Forest 5G</option>
+                    <option value="SGD_Congestion_6G">SGD Congestion 6G</option>
+                    <option value="IsolationForest_5G">Isolation Forest 5G</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">n_estimators</label>
+                    <input type="number" id="hp_n_est" value="300" min="50" max="1000"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">max_depth</label>
+                    <input type="number" id="hp_depth" value="5" min="2" max="20"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">learning_rate</label>
+                    <input type="number" id="hp_lr" value="0.1" step="0.01" min="0.001" max="1"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">subsample</label>
+                    <input type="number" id="hp_sub" value="0.8" step="0.1" min="0.1" max="1"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <button onclick="triggerRetrain()" id="retrain-btn"
+                class="w-full button-green text-white py-2 rounded-lg text-sm font-medium">
+                🚀 Start Retraining
+            </button>
+            <div id="retrain-result" class="text-xs mt-2"></div>
+        </div>
+
+        <!-- Before/After comparison -->
+        <div class="mt-4">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-sm font-bold text-purple-700">📊 Before / After Comparison</h3>
+                <button onclick="loadComparison()"
+                    class="text-xs text-purple-600 hover:underline">Load</button>
+            </div>
+            <div id="comparison-container" class="text-xs text-gray-400">
+                Click Load to compare versions
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SHAP Panel -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <div class="card-style p-6">
+        <h2 class="text-lg font-bold text-purple-800 mb-4">🧠 SHAP Feature Analysis</h2>
+        <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice ID</label>
+                    <input type="text" id="shap_slice_id" value="analysis_001"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Latency Budget</label>
+                    <input type="number" id="shap_lat_budget" value="200"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice Latency</label>
+                    <input type="number" id="shap_lat_slice" value="150"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Data Rate Budget</label>
+                    <input type="number" id="shap_rate_budget" value="5.0" step="0.1"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Transfer Rate</label>
+                    <input type="number" id="shap_rate_slice" value="6.0" step="0.1"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">PLR Budget</label>
+                    <input type="number" id="shap_plr_budget" value="0.01" step="0.001"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <button onclick="loadShap()"
+                class="w-full button-primary text-white py-2 rounded-lg text-sm font-medium">
+                🧠 Compute SHAP
+            </button>
+        </div>
+        <div id="shap-result" class="mt-4">
+            <div class="text-center text-gray-400 py-4">
+                Fill in values and click Compute SHAP
+            </div>
+        </div>
+    </div>
+
+    <!-- SHAP Chart -->
+    <div class="card-style p-6">
+        <h2 class="text-lg font-bold text-purple-800 mb-4">📊 SHAP Top Features Chart</h2>
+        <canvas id="shapChart" height="200"></canvas>
+        <div id="shap-explanation" class="mt-3 text-xs text-gray-500 italic"></div>
+    </div>
+</div>
+
+<!-- Drift Detection -->
+<div class="card-style p-6 mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-bold text-purple-800">🌊 Model Drift Detection</h2>
+        <button onclick="checkDrift()" id="drift-btn"
+            class="button-primary text-white px-4 py-2 rounded-lg text-sm">
+            🔍 Check Drift
+        </button>
+    </div>
+    <div id="drift-container">
+        {% if drift_logs %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {% for d in drift_logs %}
+            <div class="bg-gray-50 rounded-lg p-3">
+                <div class="font-medium text-sm text-gray-700 mb-1">{{ d.model_name }}</div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs px-2 py-1 rounded-full
+                        {% if d.drift_status == 'Stable' %}badge-stable
+                        {% elif d.drift_status == 'Warning' %}badge-warning
+                        {% else %}badge-drift{% endif %}">
+                        {{ d.drift_status }}
+                    </span>
+                    <span class="text-xs font-mono text-gray-600">
+                        {{ "%.4f"|format(d.drift_score) }}
+                    </span>
+                </div>
+                <div class="text-xs text-gray-400 mt-1">
+                    {{ d.checked_at.strftime('%H:%M:%S') }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-gray-400 py-6">
+            Click "Check Drift" to analyze model stability
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent SHAP logs -->
+<div class="card-style p-6">
+    <h2 class="text-lg font-bold text-purple-800 mb-4">📋 Recent SHAP Analyses</h2>
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-purple-50 text-purple-800">
+                <th class="px-4 py-2 text-left">Slice ID</th>
+                <th class="px-4 py-2 text-left">Model Version</th>
+                <th class="px-4 py-2 text-left">Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in shap_logs %}
+            <tr class="border-b border-gray-100 hover:bg-purple-50">
+                <td class="px-4 py-3 font-mono text-xs">{{ s.slice_id }}</td>
+                <td class="px-4 py-3 text-xs text-gray-500">{{ s.model_version }}</td>
+                <td class="px-4 py-3 text-xs text-gray-400">
+                    {{ s.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="px-4 py-6 text-center text-gray-400">
+                    No SHAP analyses yet
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── SHAP Chart ────────────────────────────────────────────────────
+let shapChart = null;
+
+function initShapChart(labels, values) {
+    const ctx = document.getElementById('shapChart').getContext('2d');
+    if (shapChart) shapChart.destroy();
+    shapChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'SHAP Value',
+                data: values,
+                backgroundColor: values.map(v =>
+                    v >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)'
+                ),
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: {
+                    ticks: {
+                        callback: v => v.toFixed(4)
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ── Load SHAP ─────────────────────────────────────────────────────
+async function loadShap() {
+    const sliceId = document.getElementById('shap_slice_id').value;
+    const params  = new URLSearchParams({
+        latency_budget:      document.getElementById('shap_lat_budget').value,
+        slice_latency:       document.getElementById('shap_lat_slice').value,
+        data_rate_budget:    document.getElementById('shap_rate_budget').value,
+        slice_transfer_rate: document.getElementById('shap_rate_slice').value,
+        packet_loss_budget:  document.getElementById('shap_plr_budget').value,
+        slice_packet_loss:   0.005,
+        jitter_budget:       50,
+        slice_jitter:        30,
+    });
+
+    document.getElementById('shap-result').innerHTML =
+        '<div class="text-center py-4 text-gray-400">⚙️ Computing SHAP...</div>';
+
+    try {
+        const res  = await fetch(`/model/shap/${sliceId}?${params}`);
+        const data = await res.json();
+
+        if (data.error) {
+            document.getElementById('shap-result').innerHTML =
+                `<div class="text-red-500 text-xs">❌ ${data.error}</div>`;
+            return;
+        }
+
+        // Render top5 bars
+        const top5 = data.top5_features;
+        document.getElementById('shap-result').innerHTML = top5.map(f => `
+            <div class="flex items-center gap-2 mb-2 text-xs">
+                <span class="w-32 text-gray-600 truncate font-medium">${f.feature}</span>
+                <div class="flex-1 bg-gray-100 rounded h-3 relative">
+                    <div class="${f.shap_value >= 0 ? 'bg-green-400' : 'bg-red-400'}
+                                 h-3 rounded"
+                         style="width: ${Math.min(Math.abs(f.shap_value)*1000, 100)}%">
+                    </div>
+                </div>
+                <span class="w-16 text-right font-mono
+                    ${f.shap_value >= 0 ? 'text-green-600' : 'text-red-600'}">
+                    ${f.shap_value > 0 ? '+' : ''}${f.shap_value.toFixed(4)}
+                </span>
+            </div>
+        `).join('') + `
+            <div class="mt-2 text-xs text-blue-700 font-medium">
+                QoS Prediction: ${(data.qos_prediction*100).toFixed(1)}%
+            </div>`;
+
+        // Update chart
+        initShapChart(
+            top5.map(f => f.feature),
+            top5.map(f => f.shap_value)
+        );
+
+        document.getElementById('shap-explanation').textContent = data.explanation;
+
+    } catch(e) {
+        document.getElementById('shap-result').innerHTML =
+            `<div class="text-red-500 text-xs">❌ ${e.message}</div>`;
+    }
+}
+
+// ── Load Metrics ──────────────────────────────────────────────────
+async function loadMetrics() {
+    try {
+        const res  = await fetch('/model/metrics');
+        const data = await res.json();
+        const tbody = document.getElementById('metrics-tbody');
+        tbody.innerHTML = data.models.map(m => `
+            <tr class="border-b border-gray-100 hover:bg-purple-50">
+                <td class="px-3 py-2 text-xs font-medium">${m.model_name}</td>
+                <td class="px-3 py-2 text-xs text-gray-500">v${m.version}</td>
+                <td class="px-3 py-2 text-xs font-mono
+                    ${(m.r2_score||0) >= 0.95 ? 'text-green-600' : 'text-yellow-600'}">
+                    ${m.r2_score ? m.r2_score.toFixed(4) : 'N/A'}
+                </td>
+                <td class="px-3 py-2 text-xs font-mono text-blue-600">
+                    ${m.rmse ? m.rmse.toFixed(4) : 'N/A'}
+                </td>
+                <td class="px-3 py-2 text-xs font-mono
+                    ${(m.accuracy||0) >= 0.9 ? 'text-green-600' : 'text-yellow-600'}">
+                    ${m.accuracy ? (m.accuracy*100).toFixed(1)+'%' : 'N/A'}
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) { console.error(e); }
+}
+
+// ── Trigger Retrain ───────────────────────────────────────────────
+async function triggerRetrain() {
+    const btn   = document.getElementById('retrain-btn');
+    btn.textContent = '⏳ Retraining...';
+    btn.disabled    = true;
+
+    try {
+        const res  = await fetch('/model/retrain', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+                model_name: document.getElementById('retrain_model').value,
+                hyperparams: {
+                    n_estimators:  parseInt(document.getElementById('hp_n_est').value),
+                    max_depth:     parseInt(document.getElementById('hp_depth').value),
+                    learning_rate: parseFloat(document.getElementById('hp_lr').value),
+                    subsample:     parseFloat(document.getElementById('hp_sub').value),
+                }
+            })
+        });
+        const data = await res.json();
+        const div  = document.getElementById('retrain-result');
+        div.innerHTML = `
+            <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded">
+                <div class="font-medium text-green-700">✅ Retrained successfully!</div>
+                <div class="text-gray-600 mt-1">
+                    Version: v${data.new_version} |
+                    R²: ${data.metrics.r2_score} |
+                    RMSE: ${data.metrics.rmse} |
+                    Duration: ${data.duration_s}s
+                </div>
+                <div class="text-green-600 mt-1">
+                    Improvement: +${data.improvement}
+                </div>
+            </div>`;
+        await loadMetrics();
+    } catch(e) {
+        document.getElementById('retrain-result').innerHTML =
+            `<div class="text-red-500 text-xs">❌ ${e.message}</div>`;
+    } finally {
+        btn.textContent = '🚀 Start Retraining';
+        btn.disabled    = false;
+    }
+}
+
+// ── Load Comparison ───────────────────────────────────────────────
+async function loadComparison() {
+    const model = document.getElementById('retrain_model').value;
+    try {
+        const res  = await fetch(`/model/compare?model=${model}`);
+        const data = await res.json();
+        const div  = document.getElementById('comparison-container');
+
+        if (data.message) {
+            div.innerHTML = `<div class="text-xs text-gray-400">${data.message}</div>`;
+            return;
+        }
+
+        const imp = data.improvement;
+        div.innerHTML = `
+            <div class="grid grid-cols-3 gap-2 text-xs">
+                <div class="bg-gray-50 rounded p-2 text-center">
+                    <div class="text-gray-500">Metric</div>
+                    <div class="font-medium">R²</div>
+                    <div class="font-medium">RMSE</div>
+                    <div class="font-medium">Accuracy</div>
+                </div>
+                <div class="bg-blue-50 rounded p-2 text-center">
+                    <div class="text-blue-600 font-medium">Before v${data.before.version}</div>
+                    <div>${data.before.r2_score?.toFixed(4) || 'N/A'}</div>
+                    <div>${data.before.rmse?.toFixed(4) || 'N/A'}</div>
+                    <div>${data.before.accuracy ? (data.before.accuracy*100).toFixed(1)+'%' : 'N/A'}</div>
+                </div>
+                <div class="bg-green-50 rounded p-2 text-center">
+                    <div class="text-green-600 font-medium">After v${data.after.version}</div>
+                    <div class="${imp.r2_score > 0 ? 'metric-up' : 'metric-down'}">
+                        ${data.after.r2_score?.toFixed(4) || 'N/A'}
+                        ${imp.r2_score > 0 ? '▲' : '▼'}
+                    </div>
+                    <div class="${imp.rmse > 0 ? 'metric-up' : 'metric-down'}">
+                        ${data.after.rmse?.toFixed(4) || 'N/A'}
+                        ${imp.rmse > 0 ? '▲' : '▼'}
+                    </div>
+                    <div class="${imp.accuracy > 0 ? 'metric-up' : 'metric-down'}">
+                        ${data.after.accuracy ? (data.after.accuracy*100).toFixed(1)+'%' : 'N/A'}
+                        ${imp.accuracy > 0 ? '▲' : '▼'}
+                    </div>
+                </div>
+            </div>`;
+    } catch(e) { console.error(e); }
+}
+
+// ── Check Drift ───────────────────────────────────────────────────
+async function checkDrift() {
+    const btn = document.getElementById('drift-btn');
+    btn.textContent = '⏳ Checking...';
+    btn.disabled    = true;
+
+    try {
+        const res  = await fetch('/model/drift');
+        const data = await res.json();
+        const div  = document.getElementById('drift-container');
+
+        document.getElementById('drift-count').textContent =
+            data.summary.drift_detected + data.summary.warning;
+
+        div.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <div class="text-center bg-green-50 rounded-lg p-3">
+                    <div class="text-2xl font-bold text-green-600">${data.summary.stable}</div>
+                    <div class="text-xs text-gray-500">Stable</div>
+                </div>
+                <div class="text-center bg-yellow-50 rounded-lg p-3">
+                    <div class="text-2xl font-bold text-yellow-600">${data.summary.warning}</div>
+                    <div class="text-xs text-gray-500">Warning</div>
+                </div>
+                <div class="text-center bg-red-50 rounded-lg p-3">
+                    <div class="text-2xl font-bold text-red-600">${data.summary.drift_detected}</div>
+                    <div class="text-xs text-gray-500">Drift Detected</div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                ${data.models.map(m => `
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="font-medium text-sm text-gray-700 mb-2">${m.model_name}</div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs px-2 py-1 rounded-full
+                                ${m.drift_status === 'Stable' ? 'badge-stable' :
+                                  m.drift_status === 'Warning' ? 'badge-warning' : 'badge-drift'}">
+                                ${m.drift_status}
+                            </span>
+                            <span class="text-xs font-mono">${m.drift_score.toFixed(4)}</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">${m.recommendation}</div>
+                        <div class="mt-2 grid grid-cols-2 gap-1 text-xs">
+                            <div class="text-gray-500">Ref mean: ${m.ref_mean}</div>
+                            <div class="text-gray-500">Curr mean: ${m.curr_mean}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>`;
+    } catch(e) {
+        document.getElementById('drift-container').innerHTML =
+            `<div class="text-red-500 text-xs">❌ ${e.message}</div>`;
+    } finally {
+        btn.textContent = '🔍 Check Drift';
+        btn.disabled    = false;
+    }
+}
+</script>
+{% endblock %}

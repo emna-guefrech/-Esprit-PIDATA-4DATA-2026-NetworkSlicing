@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Anomaly History{% endblock %}
+
+{% block content %}
+<div class="card-style p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-red-800">📋 Anomaly Detection History</h2>
+        <div class="flex gap-2">
+            <!-- Filter: only anomalies -->
+            <a href="/history?only_anomalies={{ 'false' if only_anomalies else 'true' }}&method={{ method }}"
+               class="px-3 py-1 rounded-lg text-sm
+                   {% if only_anomalies %}bg-red-600 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                🚨 Anomalies only
+            </a>
+            <!-- Filter: by method -->
+            <select onchange="window.location='/history?method='+this.value+'&only_anomalies={{ only_anomalies }}'"
+                class="border border-gray-300 rounded-lg px-3 py-1 text-sm">
+                <option value="all" {% if method == 'all' %}selected{% endif %}>All methods</option>
+                <option value="IF+SVM+AE_ensemble" {% if method == 'IF+SVM+AE_ensemble' %}selected{% endif %}>5G Ensemble</option>
+                <option value="IsolationForest_6G" {% if method == 'IsolationForest_6G' %}selected{% endif %}>6G IF</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-red-50 text-red-800">
+                    <th class="px-4 py-3 text-left">ID</th>
+                    <th class="px-4 py-3 text-left">Slice ID</th>
+                    <th class="px-4 py-3 text-left">Status</th>
+                    <th class="px-4 py-3 text-left">Score</th>
+                    <th class="px-4 py-3 text-left">Method</th>
+                    <th class="px-4 py-3 text-left">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in anomalies %}
+                <tr class="border-b border-gray-100 hover:bg-red-50 transition-colors">
+                    <td class="px-4 py-3 text-gray-400 text-xs">{{ a.id }}</td>
+                    <td class="px-4 py-3 font-mono text-xs">{{ a.slice_id }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if a.is_anomaly %}bg-red-100 text-red-700
+                            {% else %}bg-green-100 text-green-700{% endif %}">
+                            {{ "🚨 Anomaly" if a.is_anomaly else "✅ Normal" }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="{% if a.score > 0.65 %}bg-red-500{% elif a.score > 0.35 %}bg-yellow-500{% else %}bg-green-500{% endif %} h-2 rounded-full"
+                                     style="width: {{ (a.score * 100)|int }}%"></div>
+                            </div>
+                            <span class="font-mono text-xs">{{ "%.4f"|format(a.score) }}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-xs text-gray-500">{{ a.method }}</td>
+                    <td class="px-4 py-3 text-xs text-gray-400">
+                        {{ a.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-4 py-12 text-center text-gray-400">
+                        No anomaly records found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

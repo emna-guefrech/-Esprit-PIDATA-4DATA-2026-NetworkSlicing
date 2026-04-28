@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel — MS-4{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-gray-700">{{ total_users }}</div>
+        <div class="text-sm text-gray-500 mt-1">Total Users</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-green-600">{{ active_users }}</div>
+        <div class="text-sm text-gray-500 mt-1">Active Users</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-blue-600">4</div>
+        <div class="text-sm text-gray-500 mt-1">Microservices</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-purple-600" id="ms-up-count">—</div>
+        <div class="text-sm text-gray-500 mt-1">MS Online</div>
+    </div>
+</div>
+
+<!-- Main grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <!-- MS Health -->
+    <div class="card-style p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-gray-800">❤️ Microservices Health</h2>
+            <button onclick="checkHealth()" id="health-btn"
+                class="button-primary text-white px-3 py-1 rounded-lg text-xs">
+                🔍 Check
+            </button>
+        </div>
+        <div id="health-container">
+            {% for name, url in ms_urls.items() %}
+            <div class="flex items-center justify-between p-3 mb-2 rounded-lg bg-gray-50"
+                 id="ms-{{ loop.index }}">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-gray-400" id="dot-{{ loop.index }}"></div>
+                    <div>
+                        <div class="text-sm font-medium">{{ name }}</div>
+                        <div class="text-xs text-gray-400 font-mono">{{ url }}</div>
+                    </div>
+                </div>
+                <span class="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-600"
+                      id="badge-{{ loop.index }}">Unknown</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Create User -->
+    <div class="card-style p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">➕ Create User</h2>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Username</label>
+                <input type="text" id="new_username"
+                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Password</label>
+                <input type="password" id="new_password"
+                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Role</label>
+                <select id="new_role"
+                    class="w-full border rounded-lg px-3 py-2 text-sm">
+                    <option value="network_engineer">Network Engineer</option>
+                    <option value="data_scientist">Data Scientist</option>
+                    <option value="noc_operator">NOC Operator</option>
+                    <option value="system_admin">System Admin</option>
+                </select>
+            </div>
+            <button onclick="createUser()"
+                class="w-full button-green text-white py-2 rounded-lg text-sm font-medium">
+                ✅ Create User
+            </button>
+            <div id="create-result" class="text-xs mt-1"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="card-style p-6 mb-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">👥 Users</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50 text-gray-700">
+                    <th class="px-4 py-2 text-left">ID</th>
+                    <th class="px-4 py-2 text-left">Username</th>
+                    <th class="px-4 py-2 text-left">Role</th>
+                    <th class="px-4 py-2 text-left">Status</th>
+                    <th class="px-4 py-2 text-left">Last Login</th>
+                    <th class="px-4 py-2 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-tbody">
+                {% for u in users %}
+                <tr class="border-b border-gray-100 hover:bg-gray-50"
+                    id="user-row-{{ u.id }}">
+                    <td class="px-4 py-3 text-gray-400 text-xs">{{ u.id }}</td>
+                    <td class="px-4 py-3 font-medium text-sm">{{ u.username }}</td>
+                    <td class="px-4 py-3">
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if u.role == 'system_admin' %}role-admin
+                            {% elif u.role == 'network_engineer' %}role-engineer
+                            {% elif u.role == 'data_scientist' %}role-scientist
+                            {% else %}role-operator{% endif %}">
+                            {{ u.role.replace('_', ' ').title() }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if u.is_active %}status-up{% else %}status-down{% endif %}">
+                            {{ "✅ Active" if u.is_active else "❌ Disabled" }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-xs text-gray-400">
+                        {{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else 'Never' }}
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if u.id != current_user.id %}
+                        <button onclick="toggleUser({{ u.id }}, {{ 'true' if u.is_active else 'false' }})"
+                            class="text-xs px-2 py-1 rounded border
+                                {% if u.is_active %}border-red-300 text-red-600 hover:bg-red-50
+                                {% else %}border-green-300 text-green-600 hover:bg-green-50{% endif %}">
+                            {{ "Disable" if u.is_active else "Enable" }}
+                        </button>
+                        {% else %}
+                        <span class="text-xs text-gray-400">(you)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Integration Logs -->
+<div class="card-style p-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-bold text-gray-800">📋 Integration Logs</h2>
+        <button onclick="refreshLogs()"
+            class="button-primary text-white px-3 py-1 rounded-lg text-xs">
+            🔄 Refresh
+        </button>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="logs-table">
+            <thead>
+                <tr class="bg-gray-50 text-gray-700">
+                    <th class="px-4 py-2 text-left">Service</th>
+                    <th class="px-4 py-2 text-left">Endpoint</th>
+                    <th class="px-4 py-2 text-left">Status</th>
+                    <th class="px-4 py-2 text-left">Latency</th>
+                    <th class="px-4 py-2 text-left">Time</th>
+                </tr>
+            </thead>
+            <tbody id="logs-tbody">
+                {% for log in logs %}
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="px-4 py-2 text-xs font-medium">{{ log.service }}</td>
+                    <td class="px-4 py-2 text-xs font-mono text-gray-600">{{ log.endpoint }}</td>
+                    <td class="px-4 py-2">
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if log.status_code == 200 %}status-up
+                            {% elif log.status_code == 0 %}status-down
+                            {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                            {{ log.status_code }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2 text-xs text-gray-500">{{ log.latency_ms }}ms</td>
+                    <td class="px-4 py-2 text-xs text-gray-400">
+                        {{ log.created_at.strftime('%H:%M:%S') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const MS_NAMES = {{ ms_urls.keys()|list|tojson }};
+const MS_URLS  = {{ ms_urls.values()|list|tojson }};
+
+// ── Check health ──────────────────────────────────────────────────
+async function checkHealth() {
+    const btn = document.getElementById('health-btn');
+    btn.textContent = '⏳ Checking...';
+    btn.disabled    = true;
+
+    try {
+        const res  = await fetch('/admin/health');
+        const data = await res.json();
+
+        document.getElementById('ms-up-count').textContent =
+            `${data.summary.up}/${data.summary.up + data.summary.down}`;
+
+        data.services.forEach((s, i) => {
+            const idx  = i + 1;
+            const dot  = document.getElementById(`dot-${idx}`);
+            const badge= document.getElementById(`badge-${idx}`);
+            const row  = document.getElementById(`ms-${idx}`);
+            if (dot) {
+                dot.className = `w-2 h-2 rounded-full ${s.up ? 'bg-green-500' : 'bg-red-500'}`;
+            }
+            if (badge) {
+                badge.textContent = s.up ? `✅ ${s.latency_ms}ms` : '❌ Down';
+                badge.className   = `text-xs px-2 py-1 rounded-full ${s.up ? 'status-up' : 'status-down'}`;
+            }
+            if (row) {
+                row.className = `flex items-center justify-between p-3 mb-2 rounded-lg
+                    ${s.up ? 'bg-green-50' : 'bg-red-50'}`;
+            }
+        });
+    } catch(e) {
+        console.error('Health check failed:', e);
+    } finally {
+        btn.textContent = '🔍 Check';
+        btn.disabled    = false;
+    }
+}
+
+// ── Create user ───────────────────────────────────────────────────
+async function createUser() {
+    const username = document.getElementById('new_username').value.trim();
+    const password = document.getElementById('new_password').value;
+    const role     = document.getElementById('new_role').value;
+    const div      = document.getElementById('create-result');
+
+    if (!username || !password) {
+        div.innerHTML = '<span class="text-red-500">❌ Username and password required</span>';
+        return;
+    }
+
+    try {
+        const res  = await fetch('/admin/users', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ action: 'create', username, password, role })
+        });
+        const data = await res.json();
+        if (data.error) {
+            div.innerHTML = `<span class="text-red-500">❌ ${data.error}</span>`;
+        } else {
+            div.innerHTML = `<span class="text-green-600">✅ User '${data.user.username}' created!</span>`;
+            document.getElementById('new_username').value = '';
+            document.getElementById('new_password').value = '';
+            await refreshUsers();
+        }
+    } catch(e) {
+        div.innerHTML = `<span class="text-red-500">❌ ${e.message}</span>`;
+    }
+}
+
+// ── Toggle user ───────────────────────────────────────────────────
+async function toggleUser(userId, isActive) {
+    try {
+        const res  = await fetch('/admin/users', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ action: 'toggle', user_id: userId })
+        });
+        const data = await res.json();
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            await refreshUsers();
+        }
+    } catch(e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+// ── Refresh users ─────────────────────────────────────────────────
+async function refreshUsers() {
+    try {
+        const res  = await fetch('/admin/users');
+        const data = await res.json();
+        const tbody = document.getElementById('users-tbody');
+        tbody.innerHTML = data.users.map(u => `
+            <tr class="border-b border-gray-100 hover:bg-gray-50" id="user-row-${u.id}">
+                <td class="px-4 py-3 text-gray-400 text-xs">${u.id}</td>
+                <td class="px-4 py-3 font-medium text-sm">${u.username}</td>
+                <td class="px-4 py-3">
+                    <span class="text-xs px-2 py-1 rounded-full
+                        ${u.role === 'system_admin' ? 'role-admin' :
+                          u.role === 'network_engineer' ? 'role-engineer' :
+                          u.role === 'data_scientist' ? 'role-scientist' : 'role-operator'}">
+                        ${u.role.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    </span>
+                </td>
+                <td class="px-4 py-3">
+                    <span class="text-xs px-2 py-1 rounded-full
+                        ${u.is_active ? 'status-up' : 'status-down'}">
+                        ${u.is_active ? '✅ Active' : '❌ Disabled'}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-xs text-gray-400">
+                    ${u.last_login || 'Never'}
+                </td>
+                <td class="px-4 py-3">
+                    <button onclick="toggleUser(${u.id}, ${u.is_active})"
+                        class="text-xs px-2 py-1 rounded border
+                            ${u.is_active ?
+                              'border-red-300 text-red-600 hover:bg-red-50' :
+                              'border-green-300 text-green-600 hover:bg-green-50'}">
+                        ${u.is_active ? 'Disable' : 'Enable'}
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) { console.error(e); }
+}
+
+// ── Refresh logs ──────────────────────────────────────────────────
+async function refreshLogs() {
+    try {
+        const res  = await fetch('/admin/logs?limit=20');
+        const data = await res.json();
+        const tbody = document.getElementById('logs-tbody');
+        tbody.innerHTML = data.logs.map(l => `
+            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                <td class="px-4 py-2 text-xs font-medium">${l.service}</td>
+                <td class="px-4 py-2 text-xs font-mono text-gray-600">${l.endpoint}</td>
+                <td class="px-4 py-2">
+                    <span class="text-xs px-2 py-1 rounded-full
+                        ${l.status_code === 200 ? 'status-up' :
+                          l.status_code === 0   ? 'status-down' :
+                                                  'bg-yellow-100 text-yellow-700'}">
+                        ${l.status_code}
+                    </span>
+                </td>
+                <td class="px-4 py-2 text-xs text-gray-500">${l.latency_ms}ms</td>
+                <td class="px-4 py-2 text-xs text-gray-400">${l.created_at}</td>
+            </tr>
+        `).join('');
+    } catch(e) { console.error(e); }
+}
+
+// Auto-check health on load
+window.addEventListener('load', () => {
+    checkHealth();
+    setInterval(refreshLogs, 30000);
+});
+</script>
+{% endblock %}

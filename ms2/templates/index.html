@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% block title %}MS-2 Anomaly Detection Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Stats row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-blue-700" id="total-count">{{ total }}</div>
+        <div class="text-sm text-gray-500 mt-1">Total Detections</div>
+        <div class="text-xs text-gray-400 mt-1" id="last-refresh">Live</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-red-600">{{ total_anom }}</div>
+        <div class="text-sm text-gray-500 mt-1">Anomalies Detected</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold
+            {% if rate > 20 %}text-red-600
+            {% elif rate > 10 %}text-yellow-600
+            {% else %}text-green-600{% endif %}">
+            {{ rate }}%
+        </div>
+        <div class="text-sm text-gray-500 mt-1">Anomaly Rate</div>
+    </div>
+</div>
+
+<!-- Main grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Detection Form -->
+    <div class="card-style p-6">
+        <h2 class="text-xl font-bold text-red-800 mb-4">🔍 Anomaly Detection Input</h2>
+
+        <!-- Pipeline selector -->
+        <div class="flex space-x-2 mb-4">
+            <button onclick="setPipeline('5g')" id="btn-5g"
+                class="flex-1 py-2 px-4 rounded-lg text-sm font-medium button-primary text-white">
+                📡 5G (IF+SVM+AE)
+            </button>
+            <button onclick="setPipeline('6g')" id="btn-6g"
+                class="flex-1 py-2 px-4 rounded-lg text-sm font-medium bg-gray-200 text-gray-700">
+                🚀 6G (Isolation Forest)
+            </button>
+        </div>
+
+        <!-- 5G inputs -->
+        <div id="form-5g" class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice ID</label>
+                    <input type="text" id="slice_id" value="slice_001"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Time (0-23h)</label>
+                    <input type="number" id="time" value="20" min="0" max="23"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Packet Loss Rate</label>
+                    <input type="number" id="plr" value="0.01" step="0.001"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Packet Delay (ms)</label>
+                    <input type="number" id="delay" value="300"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">LTE/5G Category</label>
+                    <input type="number" id="lte5g_cat" value="14"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">GBR</label>
+                    <select id="gbr" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="1">1 (GBR)</option>
+                        <option value="0">0 (Non-GBR)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6G inputs -->
+        <div id="form-6g" class="space-y-3 hidden">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice ID</label>
+                    <input type="text" id="slice_id_6g" value="6g_slice_001"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Latency Budget (μs)</label>
+                    <input type="number" id="6g_lat_budget" value="200"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice Latency (μs)</label>
+                    <input type="number" id="6g_lat_slice" value="150"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Packet Loss Budget</label>
+                    <input type="number" id="6g_plr_budget" value="0.01" step="0.001"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice Packet Loss</label>
+                    <input type="number" id="6g_plr_slice" value="0.005" step="0.001"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Jitter Budget (μs)</label>
+                    <input type="number" id="6g_jit_budget" value="50"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice Jitter (μs)</label>
+                    <input type="number" id="6g_jit_slice" value="30"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Data Rate Budget (Gbps)</label>
+                    <input type="number" id="6g_rate_budget" value="5.0" step="0.1"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Transfer Rate (Gbps)</label>
+                    <input type="number" id="6g_rate_slice" value="6.0" step="0.1"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="detect()" id="detect-btn"
+            class="w-full button-primary text-white py-3 px-4 rounded-lg font-medium mt-4">
+            🔍 Detect Anomaly
+        </button>
+    </div>
+
+    <!-- Result -->
+    <div class="card-style p-6">
+        <h2 class="text-xl font-bold text-red-800 mb-4">📊 Detection Result</h2>
+        <div id="result-container">
+            <div class="text-center text-gray-400 py-12">
+                <div class="text-5xl mb-3">🔍</div>
+                <p>Fill in the metrics and click Detect Anomaly</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent detections -->
+<div class="card-style p-6 mt-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-red-800">🕐 Recent Detections</h2>
+        <a href="/history" class="text-sm text-red-600 hover:underline">View all →</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-red-50 text-red-800">
+                    <th class="px-4 py-2 text-left">Slice ID</th>
+                    <th class="px-4 py-2 text-left">Status</th>
+                    <th class="px-4 py-2 text-left">Score</th>
+                    <th class="px-4 py-2 text-left">Method</th>
+                    <th class="px-4 py-2 text-left">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in recent %}
+                <tr class="border-b border-gray-100 hover:bg-red-50 transition-colors
+                    {% if a.is_anomaly %}alert-critical{% endif %}">
+                    <td class="px-4 py-3 font-mono text-xs">{{ a.slice_id }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if a.is_anomaly %}bg-red-100 text-red-700
+                            {% else %}bg-green-100 text-green-700{% endif %}">
+                            {{ "🚨 Anomaly" if a.is_anomaly else "✅ Normal" }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 font-medium
+                        {% if a.score > 0.65 %}text-red-600
+                        {% elif a.score > 0.35 %}text-yellow-600
+                        {% else %}text-green-600{% endif %}">
+                        {{ "%.4f"|format(a.score) }}
+                    </td>
+                    <td class="px-4 py-3 text-xs text-gray-500">{{ a.method }}</td>
+                    <td class="px-4 py-3 text-xs text-gray-400">
+                        {{ a.created_at.strftime('%H:%M:%S') }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-400">
+                        No detections yet
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPipeline = '5g';
+
+function setPipeline(p) {
+    currentPipeline = p;
+    document.getElementById('form-5g').classList.toggle('hidden', p !== '5g');
+    document.getElementById('form-6g').classList.toggle('hidden', p !== '6g');
+    document.getElementById('btn-5g').className =
+        'flex-1 py-2 px-4 rounded-lg text-sm font-medium ' +
+        (p === '5g' ? 'button-primary text-white' : 'bg-gray-200 text-gray-700');
+    document.getElementById('btn-6g').className =
+        'flex-1 py-2 px-4 rounded-lg text-sm font-medium ' +
+        (p === '6g' ? 'button-primary text-white' : 'bg-gray-200 text-gray-700');
+}
+
+function getInput() {
+    if (currentPipeline === '5g') {
+        return {
+            slice_id:   document.getElementById('slice_id').value,
+            pipeline:   '5g',
+            time:       parseFloat(document.getElementById('time').value),
+            plr:        parseFloat(document.getElementById('plr').value),
+            delay:      parseFloat(document.getElementById('delay').value),
+            lte5g_cat:  parseFloat(document.getElementById('lte5g_cat').value),
+            gbr:        parseInt(document.getElementById('gbr').value),
+        };
+    } else {
+        return {
+            slice_id:            document.getElementById('slice_id_6g').value,
+            pipeline:            '6g',
+            latency_budget:      parseFloat(document.getElementById('6g_lat_budget').value),
+            slice_latency:       parseFloat(document.getElementById('6g_lat_slice').value),
+            packet_loss_budget:  parseFloat(document.getElementById('6g_plr_budget').value),
+            slice_packet_loss:   parseFloat(document.getElementById('6g_plr_slice').value),
+            jitter_budget:       parseFloat(document.getElementById('6g_jit_budget').value),
+            slice_jitter:        parseFloat(document.getElementById('6g_jit_slice').value),
+            data_rate_budget:    parseFloat(document.getElementById('6g_rate_budget').value),
+            slice_transfer_rate: parseFloat(document.getElementById('6g_rate_slice').value),
+        };
+    }
+}
+
+async function detect() {
+    const btn = document.getElementById('detect-btn');
+    btn.textContent = '⏳ Detecting...';
+    btn.disabled = true;
+
+    const resultDiv = document.getElementById('result-container');
+    resultDiv.innerHTML = '<div class="text-center py-8"><div class="text-3xl">⚙️</div></div>';
+
+    try {
+        const res  = await fetch('/anomaly/detect', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(getInput())
+        });
+        const data = await res.json();
+        renderResult(data);
+    } catch(err) {
+        resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <strong>❌ Error:</strong> ${err.message}</div>`;
+    } finally {
+        btn.textContent = '🔍 Detect Anomaly';
+        btn.disabled = false;
+    }
+}
+
+function renderResult(data) {
+    const resultDiv = document.getElementById('result-container');
+    if (data.error) {
+        resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <strong>❌ Error:</strong> ${data.error}</div>`;
+        return;
+    }
+
+    const isAnom = data.is_anomaly;
+    const score  = data.score;
+    const tier   = data.risk_tier;
+
+    const colors = {
+        High:   { bg: 'bg-red-50',    border: 'border-red-500',    text: 'text-red-700',    emoji: '🚨' },
+        Medium: { bg: 'bg-yellow-50', border: 'border-yellow-500', text: 'text-yellow-700', emoji: '⚠️' },
+        Low:    { bg: 'bg-green-50',  border: 'border-green-500',  text: 'text-green-700',  emoji: '✅' },
+    };
+    const c = colors[tier] || colors.Low;
+
+    const pct = (score * 100).toFixed(1);
+    const barColor = score > 0.65 ? 'bg-red-500' : score > 0.35 ? 'bg-yellow-500' : 'bg-green-500';
+
+    let detailsHtml = '';
+    if (data.details) {
+        const d = data.details;
+        if (d.if_score !== undefined)  detailsHtml += `<div class="flex justify-between"><span class="text-gray-500">IF Score</span><strong>${d.if_score}</strong></div>`;
+        if (d.svm_score !== undefined) detailsHtml += `<div class="flex justify-between"><span class="text-gray-500">SVM Score</span><strong>${d.svm_score}</strong></div>`;
+        if (d.ae_score !== undefined)  detailsHtml += `<div class="flex justify-between"><span class="text-gray-500">AE Score</span><strong>${d.ae_score}</strong></div>`;
+    }
+
+    resultDiv.innerHTML = `
+        <div class="${c.bg} border-l-4 ${c.border} p-5 rounded-lg ${isAnom ? (tier === 'High' ? 'alert-critical' : 'alert-warn') : ''}">
+            <div class="text-2xl font-bold ${c.text} mb-3">
+                ${c.emoji} ${isAnom ? 'ANOMALY DETECTED' : 'NORMAL'}
+            </div>
+            <div class="mb-3">
+                <div class="text-sm text-gray-600 mb-1">Anomaly Score: <strong>${pct}%</strong></div>
+                <div class="bg-gray-200 rounded-full h-3">
+                    <div class="${barColor} h-3 rounded-full" style="width: ${pct}%"></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                <div class="bg-white rounded p-2">
+                    <div class="text-gray-500 text-xs">Risk Tier</div>
+                    <div class="font-bold ${c.text}">${tier}</div>
+                </div>
+                <div class="bg-white rounded p-2">
+                    <div class="text-gray-500 text-xs">Confidence</div>
+                    <div class="font-bold">${(data.confidence * 100).toFixed(1)}%</div>
+                </div>
+                <div class="bg-white rounded p-2">
+                    <div class="text-gray-500 text-xs">Pipeline</div>
+                    <div class="font-bold">${data.pipeline}</div>
+                </div>
+                <div class="bg-white rounded p-2">
+                    <div class="text-gray-500 text-xs">Method</div>
+                    <div class="font-bold text-xs">${data.details?.method || 'N/A'}</div>
+                </div>
+            </div>
+            ${detailsHtml ? `<div class="bg-white rounded p-3 text-sm space-y-1">${detailsHtml}</div>` : ''}
+            <div class="mt-3 text-xs text-gray-500">
+                Slice ID: <span class="font-mono">${data.slice_id}</span>
+            </div>
+        </div>`;
+}
+
+// Auto-refresh stats
+setInterval(async () => {
+    try {
+        const res  = await fetch('/anomaly/history?limit=1');
+        const data = await res.json();
+        document.getElementById('total-count').textContent = data.total;
+        document.getElementById('last-refresh').textContent =
+            'Refreshed: ' + new Date().toLocaleTimeString();
+    } catch(e) {}
+}, 30000);
+</script>
+{% endblock %}

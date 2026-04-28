@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MS-4 Auth & Admin{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        .main-bg {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            min-height: 100vh;
+        }
+        .card-style {
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(147,197,253,0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            backdrop-filter: blur(8px);
+        }
+        .button-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            transition: all 0.2s ease;
+        }
+        .button-primary:hover { transform: translateY(-1px); }
+        .button-red {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            transition: all 0.2s ease;
+        }
+        .button-green {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            transition: all 0.2s ease;
+        }
+        .nav-link { transition: all 0.2s; }
+        .nav-link:hover { background: rgba(255,255,255,0.2); border-radius: 8px; }
+        .nav-link.active { background: rgba(255,255,255,0.3); border-radius: 8px; font-weight: 600; }
+        .role-admin    { background: #ede9fe; color: #6d28d9; }
+        .role-engineer { background: #dbeafe; color: #1d4ed8; }
+        .role-scientist{ background: #d1fae5; color: #065f46; }
+        .role-operator { background: #fef3c7; color: #92400e; }
+        .status-up     { background: #dcfce7; color: #166534; }
+        .status-down   { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body class="main-bg text-gray-800">
+
+{% if current_user.is_authenticated %}
+<nav class="bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl">🔐</span>
+            <div>
+                <h1 class="text-xl font-bold">Network Slicing</h1>
+                <p class="text-gray-300 text-xs">MS-4 — Auth & Admin Service</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            {% if current_user.role == 'system_admin' %}
+            <a href="/admin" class="nav-link px-3 py-2 text-sm {% if request.path == '/admin' %}active{% endif %}">
+                ⚙️ Admin
+            </a>
+            {% endif %}
+            <a href="/portal" class="nav-link px-3 py-2 text-sm {% if request.path == '/portal' %}active{% endif %}">
+                🏠 Portal
+            </a>
+            <div class="flex items-center gap-2 ml-4">
+                <span class="text-xs px-2 py-1 rounded-full
+                    {% if current_user.role == 'system_admin' %}role-admin
+                    {% elif current_user.role == 'network_engineer' %}role-engineer
+                    {% elif current_user.role == 'data_scientist' %}role-scientist
+                    {% else %}role-operator{% endif %}">
+                    {{ current_user.role.replace('_', ' ').title() }}
+                </span>
+                <span class="text-sm text-gray-300">{{ current_user.username }}</span>
+                <a href="/auth/logout"
+                   class="text-xs bg-red-700 hover:bg-red-600 px-3 py-1 rounded-lg">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+{% endif %}
+
+<div class="container mx-auto px-4 py-6">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="mb-4 p-4 rounded-lg
+            {% if category == 'error' %}bg-red-50 border-l-4 border-red-500 text-red-700
+            {% else %}bg-green-50 border-l-4 border-green-500 text-green-700{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</div>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

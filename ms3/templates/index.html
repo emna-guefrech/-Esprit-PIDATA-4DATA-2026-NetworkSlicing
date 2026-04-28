@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% block title %}MS-3 NOC Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Stats row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-blue-700" id="total-slices">{{ total_slices }}</div>
+        <div class="text-sm text-gray-500 mt-1">Active Slices</div>
+        <div class="text-xs text-gray-400 mt-1" id="last-refresh">Live (30s)</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-red-600" id="critical-cnt">{{ critical_cnt }}</div>
+        <div class="text-sm text-gray-500 mt-1">Critical</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-yellow-600" id="warn-cnt">{{ warn_cnt }}</div>
+        <div class="text-sm text-gray-500 mt-1">Warning</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-green-600" id="normal-cnt">{{ normal_cnt }}</div>
+        <div class="text-sm text-gray-500 mt-1">Normal</div>
+    </div>
+</div>
+
+<!-- Main grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+    <!-- Simulate slice (demo) -->
+    <div class="card-style p-6">
+        <h2 class="text-lg font-bold text-indigo-800 mb-4">➕ Add / Update Slice</h2>
+        <div class="space-y-2">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Slice ID</label>
+                <input type="text" id="sim_slice_id" value="slice_001"
+                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Pipeline</label>
+                <select id="sim_pipeline" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    <option value="6g">6G</option>
+                    <option value="5g">5G</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Latency Budget</label>
+                    <input type="number" id="sim_lat_budget" value="200"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice Latency</label>
+                    <input type="number" id="sim_lat_slice" value="150"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">PLR Budget</label>
+                    <input type="number" id="sim_plr_budget" value="0.01" step="0.001"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice PLR</label>
+                    <input type="number" id="sim_plr_slice" value="0.005" step="0.001"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Jitter Budget</label>
+                    <input type="number" id="sim_jit_budget" value="50"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Slice Jitter</label>
+                    <input type="number" id="sim_jit_slice" value="30"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Rate Budget</label>
+                    <input type="number" id="sim_rate_budget" value="5.0" step="0.1"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Transfer Rate</label>
+                    <input type="number" id="sim_rate_slice" value="6.0" step="0.1"
+                        class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <button onclick="simulateSlice()"
+                class="w-full button-primary text-white py-2 rounded-lg text-sm font-medium mt-2">
+                📡 Submit Slice
+            </button>
+            <div id="sim-result" class="text-xs text-gray-500 mt-2"></div>
+        </div>
+    </div>
+
+    <!-- Active Alerts -->
+    <div class="card-style p-6 lg:col-span-2">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-indigo-800">🚨 Active Alerts</h2>
+            <a href="/alerts" class="text-sm text-indigo-600 hover:underline">View all →</a>
+        </div>
+        <div id="alerts-container">
+            {% for alert in active_alerts %}
+            <div class="flex items-center justify-between p-3 mb-2 rounded-lg
+                {% if alert.level == 'CRITICAL' %}alert-critical bg-red-50
+                {% else %}alert-warn bg-yellow-50{% endif %}"
+                id="alert-{{ alert.id }}">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold px-2 py-1 rounded-full
+                        {% if alert.level == 'CRITICAL' %}badge-critical
+                        {% else %}badge-warn{% endif %}">
+                        {{ alert.level }}
+                    </span>
+                    <div>
+                        <div class="text-sm font-medium">{{ alert.slice_id }}</div>
+                        <div class="text-xs text-gray-500">{{ alert.message }}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">
+                        {{ alert.created_at.strftime('%H:%M:%S') }}
+                    </span>
+                    <button onclick="ackAlert({{ alert.id }})"
+                        class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50">
+                        ✓ Ack
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center text-gray-400 py-6" id="no-alerts">
+                ✅ No active alerts
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Slice table -->
+<div class="card-style p-6 mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-bold text-indigo-800">📡 Active Slices — Real-time</h2>
+        <span class="text-xs text-gray-400">Auto-refresh every 30s</span>
+    </div>
+    <div class="overflow-x-auto" id="slices-table">
+        {% include 'partials/slice_table.html' %}
+    </div>
+</div>
+
+<!-- QoS History Chart -->
+<div class="card-style p-6 mb-6">
+    <h2 class="text-lg font-bold text-indigo-800 mb-4">📈 QoS History</h2>
+    <canvas id="qosChart" height="80"></canvas>
+</div>
+
+<!-- Threshold config -->
+<div class="card-style p-6">
+    <h2 class="text-lg font-bold text-indigo-800 mb-4">⚙️ Alert Thresholds</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for t in thresholds %}
+        <div class="bg-gray-50 rounded-lg p-4">
+            <div class="font-medium text-gray-700 mb-2">{{ t.metric }}</div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-xs text-gray-500">WARN</label>
+                    <input type="number" step="0.01"
+                        id="thresh_warn_{{ t.metric }}" value="{{ t.warn_value }}"
+                        class="w-full border rounded px-2 py-1 text-sm">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500">CRITICAL</label>
+                    <input type="number" step="0.01"
+                        id="thresh_crit_{{ t.metric }}" value="{{ t.critical_value }}"
+                        class="w-full border rounded px-2 py-1 text-sm">
+                </div>
+            </div>
+            <button onclick="updateThreshold('{{ t.metric }}')"
+                class="mt-2 w-full text-xs button-primary text-white py-1 rounded">
+                Update
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── QoS Chart ────────────────────────────────────────────────────
+const qosData = {{ slices|map(attribute='qos_score')|list|tojson }};
+const qosLabels = {{ slices|map(attribute='slice_id')|list|tojson }};
+
+const ctx = document.getElementById('qosChart').getContext('2d');
+const qosChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: qosLabels,
+        datasets: [{
+            label: 'QoS Score',
+            data: qosData,
+            backgroundColor: qosData.map(v =>
+                v >= 0.7 ? 'rgba(34,197,94,0.7)' :
+                v >= 0.4 ? 'rgba(234,179,8,0.7)' :
+                           'rgba(239,68,68,0.7)'
+            ),
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                min: 0, max: 1,
+                ticks: { callback: v => (v*100).toFixed(0)+'%' }
+            }
+        },
+        plugins: { legend: { display: false } }
+    }
+});
+
+// ── Simulate slice ────────────────────────────────────────────────
+async function simulateSlice() {
+    const pipeline = document.getElementById('sim_pipeline').value;
+    const payload  = {
+        slice_id:            document.getElementById('sim_slice_id').value,
+        pipeline:            pipeline,
+        latency_budget:      parseFloat(document.getElementById('sim_lat_budget').value),
+        slice_latency:       parseFloat(document.getElementById('sim_lat_slice').value),
+        packet_loss_budget:  parseFloat(document.getElementById('sim_plr_budget').value),
+        slice_packet_loss:   parseFloat(document.getElementById('sim_plr_slice').value),
+        jitter_budget:       parseFloat(document.getElementById('sim_jit_budget').value),
+        slice_jitter:        parseFloat(document.getElementById('sim_jit_slice').value),
+        data_rate_budget:    parseFloat(document.getElementById('sim_rate_budget').value),
+        slice_transfer_rate: parseFloat(document.getElementById('sim_rate_slice').value),
+    };
+
+    try {
+        const res  = await fetch('/dashboard/simulate', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload)
+        });
+        const data = await res.json();
+        const div  = document.getElementById('sim-result');
+        const icon = data.congestion === 'Critical' ? '🚨' :
+                     data.congestion === 'Light'    ? '⚠️' : '✅';
+        div.innerHTML = `${icon} QoS: ${data.qos_score?.toFixed(3) || 'N/A'} |
+                         ${data.congestion} |
+                         ${data.is_anomaly ? '🔴 Anomaly' : '🟢 Normal'} |
+                         ${data.alerts_created} alert(s) created`;
+        div.className = `text-xs mt-2 font-medium
+            ${data.congestion === 'Critical' ? 'text-red-600' : 'text-green-600'}`;
+        await refreshSlices();
+    } catch(e) {
+        document.getElementById('sim-result').textContent = '❌ Error: ' + e.message;
+    }
+}
+
+// ── Acknowledge alert ─────────────────────────────────────────────
+async function ackAlert(alertId) {
+    try {
+        await fetch('/dashboard/alert/ack', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ alert_id: alertId })
+        });
+        const el = document.getElementById(`alert-${alertId}`);
+        if (el) el.remove();
+        await refreshAlerts();
+    } catch(e) {
+        console.error('Ack failed:', e);
+    }
+}
+
+// ── Update threshold ──────────────────────────────────────────────
+async function updateThreshold(metric) {
+    const warn = parseFloat(
+        document.getElementById(`thresh_warn_${metric}`).value);
+    const crit = parseFloat(
+        document.getElementById(`thresh_crit_${metric}`).value);
+    try {
+        const res = await fetch('/dashboard/threshold', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+                metric:         metric,
+                warn_value:     warn,
+                critical_value: crit,
+            })
+        });
+        const data = await res.json();
+        alert(`✅ Threshold updated: ${metric} WARN=${warn} CRITICAL=${crit}`);
+    } catch(e) {
+        alert('❌ Error: ' + e.message);
+    }
+}
+
+// ── Auto-refresh slices ───────────────────────────────────────────
+async function refreshSlices() {
+    try {
+        const res    = await fetch('/dashboard/slices');
+        const data   = await res.json();
+        document.getElementById('total-slices').textContent = data.total;
+        document.getElementById('critical-cnt').textContent = data.summary.critical;
+        document.getElementById('warn-cnt').textContent     = data.summary.warning;
+        document.getElementById('normal-cnt').textContent   = data.summary.normal;
+        document.getElementById('last-refresh').textContent =
+            'Refreshed: ' + new Date().toLocaleTimeString();
+
+        // Update table
+        const tbody = document.getElementById('slice-tbody');
+        if (tbody) {
+            tbody.innerHTML = data.slices.map(s => `
+                <tr class="border-b border-gray-100 hover:bg-indigo-50 transition-colors
+                    ${s.is_anomaly || s.congestion_level === 'Critical' ? 'alert-critical' : ''}">
+                    <td class="px-4 py-3 font-mono text-xs">${s.slice_id}</td>
+                    <td class="px-4 py-3 text-xs">${s.pipeline}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="${s.qos_score >= 0.7 ? 'bg-green-500' :
+                                              s.qos_score >= 0.4 ? 'bg-yellow-500' : 'bg-red-500'}
+                                             h-2 rounded-full"
+                                     style="width: ${((s.qos_score||0)*100).toFixed(0)}%"></div>
+                            </div>
+                            <span class="text-xs font-mono">${s.qos_score?.toFixed(3) || 'N/A'}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            ${s.congestion_level === 'Critical' ? 'badge-critical' :
+                              s.congestion_level === 'Light'    ? 'badge-warn' : 'badge-normal'}">
+                            ${s.congestion_level || 'N/A'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-xs">
+                        ${s.is_anomaly ? '🚨 Yes' : '✅ No'}
+                    </td>
+                    <td class="px-4 py-3 text-xs text-gray-400">${s.last_updated}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="ackAllForSlice('${s.slice_id}')"
+                            class="text-xs bg-gray-100 border px-2 py-1 rounded hover:bg-gray-200">
+                            Ack All
+                        </button>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="7" class="text-center py-8 text-gray-400">No slices yet</td></tr>';
+        }
+
+        // Update chart
+        if (qosChart) {
+            qosChart.data.labels   = data.slices.map(s => s.slice_id);
+            qosChart.data.datasets[0].data = data.slices.map(s => s.qos_score || 0);
+            qosChart.data.datasets[0].backgroundColor = data.slices.map(s =>
+                (s.qos_score || 0) >= 0.7 ? 'rgba(34,197,94,0.7)' :
+                (s.qos_score || 0) >= 0.4 ? 'rgba(234,179,8,0.7)' :
+                                             'rgba(239,68,68,0.7)'
+            );
+            qosChart.update();
+        }
+    } catch(e) {
+        console.error('Refresh slices failed:', e);
+    }
+}
+
+async function refreshAlerts() {
+    try {
+        const res  = await fetch('/dashboard/alerts');
+        const data = await res.json();
+        const cont = document.getElementById('alerts-container');
+        if (data.total === 0) {
+            cont.innerHTML = '<div class="text-center text-gray-400 py-6">✅ No active alerts</div>';
+            return;
+        }
+        cont.innerHTML = data.alerts.slice(0, 5).map(a => `
+            <div class="flex items-center justify-between p-3 mb-2 rounded-lg
+                ${a.level === 'CRITICAL' ? 'alert-critical bg-red-50' : 'alert-warn bg-yellow-50'}"
+                id="alert-${a.id}">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold px-2 py-1 rounded-full
+                        ${a.level === 'CRITICAL' ? 'badge-critical' : 'badge-warn'}">
+                        ${a.level}
+                    </span>
+                    <div>
+                        <div class="text-sm font-medium">${a.slice_id}</div>
+                        <div class="text-xs text-gray-500">${a.message}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">${a.created_at}</span>
+                    <button onclick="ackAlert(${a.id})"
+                        class="text-xs bg-white border px-2 py-1 rounded hover:bg-gray-50">
+                        ✓ Ack
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {
+        console.error('Refresh alerts failed:', e);
+    }
+}
+
+async function ackAllForSlice(sliceId) {
+    try {
+        await fetch('/dashboard/alert/ack', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slice_id: sliceId })
+        });
+        await refreshAlerts();
+    } catch(e) { console.error(e); }
+}
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+    refreshSlices();
+    refreshAlerts();
+}, 30000);
+</script>
+{% endblock %}
