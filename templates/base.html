@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MS-1 Prediction Service{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        .main-bg {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            min-height: 100vh;
+        }
+        .card-style {
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(147,197,253,0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            backdrop-filter: blur(8px);
+        }
+        .button-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            transition: all 0.2s ease;
+        }
+        .button-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-1px);
+        }
+        .nav-link { transition: all 0.2s; }
+        .nav-link:hover { background: rgba(255,255,255,0.2); border-radius: 8px; }
+        .nav-link.active { background: rgba(255,255,255,0.3); border-radius: 8px; font-weight: 600; }
+        .badge-normal   { background: #dcfce7; color: #166534; }
+        .badge-light    { background: #fef9c3; color: #854d0e; }
+        .badge-critical { background: #fee2e2; color: #991b1b; }
+        @keyframes pulse-red {
+            0%,100% { background-color: rgba(239,68,68,0.1); }
+            50%      { background-color: rgba(239,68,68,0.2); }
+        }
+        .alert-critical { animation: pulse-red 2s infinite; }
+    
+    .nav-btn {
+        transition: all 0.2s ease;
+        background: rgba(255,255,255,0.1);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        cursor: pointer;
+    }
+    
+    .nav-btn:hover {
+        background: rgba(255,255,255,0.2);
+    }
+    
+    .nav-btn.active {
+        background: rgba(255,255,255,0.3);
+        font-weight: 600;
+    }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="main-bg text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white px-6 py-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🌐</span>
+                <div>
+                    <h1 class="text-xl font-bold">Network Slicing</h1>
+                    <p class="text-blue-200 text-xs">MS-1 — Prediction & QoS Service</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="showSection('dashboard')" class="nav-link px-4 py-2 text-sm nav-btn" id="nav-dashboard">
+                    📊 Dashboard
+                </button>
+                <button onclick="showSection('history')" class="nav-link px-4 py-2 text-sm nav-btn" id="nav-history">
+                    📋 History
+                </button>
+                <button onclick="showUserSection('login')" class="nav-link px-4 py-2 text-sm nav-btn">
+                    👤 Login
+                </button>
+                <button onclick="showUserSection('dashboard')" class="nav-link px-4 py-2 text-sm nav-btn">
+                    👤 Dashboard
+                </button>
+                <button onclick="showUserSection('profile')" class="nav-link px-4 py-2 text-sm nav-btn">
+                    👤 Profile
+                </button>
+                <button onclick="showMS3Section('dashboard')" class="nav-link px-4 py-2 text-sm nav-btn">
+                    🚨 MS-3 Main
+                </button>
+                <button onclick="showMS3Section('full')" class="nav-link px-4 py-2 text-sm nav-btn">
+                    🚨 MS-3 Full
+                </button>
+                <button onclick="showMS3Section('health')" class="nav-link px-4 py-2 text-sm nav-btn">
+                    ❤️ MS-3 Health
+                </button>
+                <button onclick="showSection('health')" class="nav-link px-4 py-2 text-sm nav-btn" id="nav-health">
+                    🏥 MS-1 Health
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="container mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

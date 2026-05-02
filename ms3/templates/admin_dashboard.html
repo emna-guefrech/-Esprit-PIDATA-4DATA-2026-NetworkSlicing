@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Network Slicing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">🛡️ Dashboard Admin</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-600 hover:text-gray-800">Dashboard</a>
+                    <a href="/profile" class="text-gray-600 hover:text-gray-800">Profil</a>
+                    <a href="/logout" class="text-red-600 hover:text-red-800">Déconnexion</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto mt-8 p-6">
+        <!-- Welcome Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Bienvenue, {{ username }}!</h2>
+            <p class="text-gray-600">Panneau d'administration système Network Slicing</p>
+        </div>
+
+        <!-- System Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Utilisateurs</p>
+                        <p class="text-2xl font-bold text-blue-600">24</p>
+                    </div>
+                    <div class="text-3xl">👥</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Slices Actives</p>
+                        <p class="text-2xl font-bold text-green-600">156</p>
+                    </div>
+                    <div class="text-3xl">📊</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Alertes Critiques</p>
+                        <p class="text-2xl font-bold text-red-600">3</p>
+                    </div>
+                    <div class="text-3xl">⚠️</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Taux CPU</p>
+                        <p class="text-2xl font-bold text-purple-600">67%</p>
+                    </div>
+                    <div class="text-3xl">💻</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Management Sections -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- User Management -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">👥 Gestion des Utilisateurs</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                        <div>
+                            <p class="font-medium">admin</p>
+                            <p class="text-sm text-gray-600">Administrateur système</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="text-blue-600 hover:text-blue-800">✏️</button>
+                            <button class="text-red-600 hover:text-red-800">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                        <div>
+                            <p class="font-medium">user</p>
+                            <p class="text-sm text-gray-600">Utilisateur standard</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="text-blue-600 hover:text-blue-800">✏️</button>
+                            <button class="text-red-600 hover:text-red-800">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                        <div>
+                            <p class="font-medium">{{ username }}</p>
+                            <p class="text-sm text-gray-600">Network Engineer</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="text-blue-600 hover:text-blue-800">✏️</button>
+                            <button class="text-red-600 hover:text-red-800">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+                <button class="mt-4 w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors">
+                    + Ajouter un utilisateur
+                </button>
+            </div>
+
+            <!-- System Settings -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">⚙️ Paramètres Système</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">Notifications Email</p>
+                            <p class="text-sm text-gray-600">Alertes critiques par email</p>
+                        </div>
+                        <button class="bg-green-500 text-white px-3 py-1 rounded text-sm">Activé</button>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">Sauvegarde Auto</p>
+                            <p class="text-sm text-gray-600">Sauvegarde quotidienne à 02:00</p>
+                        </div>
+                        <button class="bg-green-500 text-white px-3 py-1 rounded text-sm">Activé</button>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">Mode Maintenance</p>
+                            <p class="text-sm text-gray-600">Désactiver les services</p>
+                        </div>
+                        <button class="bg-gray-500 text-white px-3 py-1 rounded text-sm">Désactivé</button>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">Log Level</p>
+                            <p class="text-sm text-gray-600">Niveau de logging système</p>
+                        </div>
+                        <select class="border border-gray-300 rounded px-2 py-1 text-sm">
+                            <option>DEBUG</option>
+                            <option selected>INFO</option>
+                            <option>WARNING</option>
+                            <option>ERROR</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">📋 Activité Récente</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <div class="flex items-center">
+                        <span class="text-green-600 mr-2">✅</span>
+                        <div>
+                            <p class="font-medium">Nouvel utilisateur créé</p>
+                            <p class="text-sm text-gray-600">testuser - Il y a 5 minutes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <div class="flex items-center">
+                        <span class="text-yellow-600 mr-2">⚠️</span>
+                        <div>
+                            <p class="font-medium">Alerte critique détectée</p>
+                            <p class="text-sm text-gray-600">slice_001 - Il y a 15 minutes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <div class="flex items-center">
+                        <span class="text-blue-600 mr-2">🔄</span>
+                        <div>
+                            <p class="font-medium">Configuration mise à jour</p>
+                            <p class="text-sm text-gray-600">Thresholds - Il y a 1 heure</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

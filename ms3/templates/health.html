@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}MS-3 Health Monitor{% endblock %}
+
+{% block content %}
+<div class="text-center mb-8">
+    <h1 class="text-3xl font-bold text-blue-800 mb-2">❤️ System Health</h1>
+    <p class="text-xl text-gray-600">État de santé du système</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="card-style p-6">
+        <h3 class="text-xl font-bold text-blue-800 mb-4">🏥 System Health</h3>
+        <div class="space-y-3">
+            <div class="flex justify-between">
+                <span>Database</span>
+                <span class="text-green-600">● Online</span>
+            </div>
+            <div class="flex justify-between">
+                <span>MS-1 Connection</span>
+                <span class="text-green-600">● Connected</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Alert System</span>
+                <span class="text-green-600">● Active</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-style p-6">
+        <h3 class="text-xl font-bold text-blue-800 mb-4">📊 Performance</h3>
+        <div class="space-y-3">
+            <div class="flex justify-between">
+                <span>CPU Usage</span>
+                <span class="text-green-600">12%</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Memory</span>
+                <span class="text-yellow-600">67%</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Response Time</span>
+                <span class="text-green-600">45ms</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-style p-6">
+        <h3 class="text-xl font-bold text-blue-800 mb-4">🔧 Services</h3>
+        <div class="space-y-3">
+            <div class="flex justify-between">
+                <span>MS-1 Service</span>
+                <span class="text-green-600">● Running</span>
+            </div>
+            <div class="flex justify-between">
+                <span>MS-3 Service</span>
+                <span class="text-green-600">● Running</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Sync Service</span>
+                <span class="text-green-600">● Active</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% endblock %}

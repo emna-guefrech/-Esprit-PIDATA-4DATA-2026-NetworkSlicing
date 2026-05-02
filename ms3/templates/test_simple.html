@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MS-3 Test Simple</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">MS-3 Dashboard Test</h1>
+        
+        <!-- Test API Button -->
+        <div class="bg-white p-4 rounded-lg shadow mb-4">
+            <h2 class="text-lg font-semibold mb-2">Test API</h2>
+            <button onclick="testAPI()" class="bg-blue-500 text-white px-4 py-2 rounded">
+                Test Slices API
+            </button>
+            <div id="api-result" class="mt-2 text-sm"></div>
+        </div>
+
+        <!-- Test Alert Button -->
+        <div class="bg-white p-4 rounded-lg shadow mb-4">
+            <h2 class="text-lg font-semibold mb-2">Test Alert</h2>
+            <button onclick="testAlert()" class="bg-red-500 text-white px-4 py-2 rounded">
+                Create Test Alert
+            </button>
+            <div id="alert-result" class="mt-2 text-sm"></div>
+        </div>
+
+        <!-- Show Current Data -->
+        <div class="bg-white p-4 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-2">Current Data</h2>
+            <button onclick="loadData()" class="bg-green-500 text-white px-4 py-2 rounded">
+                Load Current Data
+            </button>
+            <div id="data-display" class="mt-2 text-sm"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            try {
+                const response = await fetch('/dashboard/slices');
+                const data = await response.json();
+                document.getElementById('api-result').innerHTML = 
+                    `✅ API Works! Found ${data.data.length} slices`;
+                console.log('API Response:', data);
+            } catch (error) {
+                document.getElementById('api-result').innerHTML = 
+                    `❌ Error: ${error.message}`;
+                console.error('API Error:', error);
+            }
+        }
+
+        async function testAlert() {
+            try {
+                const response = await fetch('/dashboard/threshold', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        metric: 'test_metric',
+                        warn_value: 0.5,
+                        critical_value: 0.3
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('alert-result').innerHTML = 
+                    `✅ Alert Created: ${data.message}`;
+                console.log('Alert Response:', data);
+            } catch (error) {
+                document.getElementById('alert-result').innerHTML = 
+                    `❌ Error: ${error.message}`;
+                console.error('Alert Error:', error);
+            }
+        }
+
+        async function loadData() {
+            try {
+                const [slicesResponse, alertsResponse] = await Promise.all([
+                    fetch('/dashboard/slices'),
+                    fetch('/dashboard/alerts')
+                ]);
+                
+                const slices = await slicesResponse.json();
+                const alerts = await alertsResponse.json();
+                
+                document.getElementById('data-display').innerHTML = `
+                    <div><strong>Slices:</strong> ${slices.data.length} actives</div>
+                    <div><strong>Alerts:</strong> ${alerts.data.length} actives</div>
+                    <div class="mt-2">
+                        <strong>Details:</strong><br>
+                        ${JSON.stringify(slices, null, 2)}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('data-display').innerHTML = 
+                    `❌ Error: ${error.message}`;
+            }
+        }
+
+        // Auto-load data on page load
+        window.onload = function() {
+            loadData();
+        };
+    </script>
+</body>
+</html>

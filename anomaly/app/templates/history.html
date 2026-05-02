@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}History - Anomaly Detection{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📜 Historique des Anomalies</h2>
+    <p class="subtitle">Détails complets des anomalies détectées</p>
+</div>
+
+<div class="filters-section">
+    <div class="filter-group">
+        <label>Slice ID:</label>
+        <input type="text" id="filterSliceId" placeholder="Ex: slice_001" class="filter-input">
+    </div>
+    <div class="filter-group">
+        <label>Type d'anomalie:</label>
+        <select id="filterIsAnomaly" class="filter-input">
+            <option value="">Tous</option>
+            <option value="true">Anomalie</option>
+            <option value="false">Normal</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>Méthode:</label>
+        <select id="filterMethod" class="filter-input">
+            <option value="">Tous</option>
+            <option value="isolation_forest">Isolation Forest</option>
+            <option value="autoencoder">Autoencoder</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>Date de début:</label>
+        <input type="datetime-local" id="filterStartDate" class="filter-input">
+    </div>
+    <div class="filter-group">
+        <label>Date de fin:</label>
+        <input type="datetime-local" id="filterEndDate" class="filter-input">
+    </div>
+    <button id="filterBtn" class="btn btn-primary">Filtrer</button>
+    <button id="clearFiltersBtn" class="btn btn-secondary">Réinitialiser</button>
+</div>
+
+<div class="history-section">
+    <div class="pagination-info">
+        <span id="paginationInfo">Affichage 0-0 sur 0</span>
+    </div>
+    
+    <table class="history-table" id="historyTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Slice ID</th>
+                <th>Anomalie</th>
+                <th>Score</th>
+                <th>Confiance</th>
+                <th>Méthode</th>
+                <th>IF Score</th>
+                <th>AE Score</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody id="historyBody">
+            <tr><td colspan="9" class="loading-state">Chargement...</td></tr>
+        </tbody>
+    </table>
+
+    <div class="pagination-controls">
+        <button id="prevBtn" class="btn btn-secondary">← Précédent</button>
+        <span id="pageInfo"></span>
+        <button id="nextBtn" class="btn btn-secondary">Suivant →</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/history.js') }}"></script>
+{% endblock %}

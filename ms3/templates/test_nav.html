@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Navigation Test{% endblock %}
+
+{% block content %}
+<div class="text-center mb-8">
+    <h1 class="text-3xl font-bold text-blue-800 mb-2">🧪 Navigation Test Page</h1>
+    <p class="text-xl text-gray-600">Testing common navigation bar</p>
+</div>
+
+<div class="card-style p-6">
+    <h2 class="text-xl font-bold text-blue-800 mb-4">🔗 Navigation Links Test</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="border rounded p-4">
+            <h3 class="font-semibold mb-2">✅ Working Links:</h3>
+            <ul class="space-y-2">
+                <li><a href="/" class="text-blue-600 hover:underline">📊 Dashboard</a></li>
+                <li><a href="/history" class="text-blue-600 hover:underline">📋 History</a></li>
+                <li><a href="/health" class="text-blue-600 hover:underline">❤️ Health</a></li>
+                <li><a href="/test" class="text-blue-600 hover:underline">🧪 Test</a></li>
+            </ul>
+        </div>
+        <div class="border rounded p-4">
+            <h3 class="font-semibold mb-2">🌐 External Links:</h3>
+            <ul class="space-y-2">
+                <li><a href="http://localhost:5001/" target="_blank" class="text-blue-600 hover:underline">🧠 MS-1 Prediction</a></li>
+                <li><a href="http://localhost:5003/fixed" target="_blank" class="text-blue-600 hover:underline">🚨 MS-3 Full</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card-style p-6 mt-6">
+    <h2 class="text-xl font-bold text-blue-800 mb-4">📊 Current Page Info</h2>
+    <div class="space-y-2">
+        <p><strong>Current Path:</strong> {{ request.path }}</p>
+        <p><strong>Current URL:</strong> {{ request.url }}</p>
+        <p><strong>Method:</strong> {{ request.method }}</p>
+    </div>
+</div>
+{% endblock %}

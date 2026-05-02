@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de Bord - Network Slicing Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>
+                <i class="fas fa-th-large"></i> Tableau de Bord
+            </h2>
+            <p class="text-muted">MS-3 Service - Real-time Monitoring</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <p class="text-muted">
+                <i class="fas fa-circle" style="color: #28a745;"></i> 
+                <span>Last updated: {{ now.strftime('%H:%M:%S') }}</span>
+            </p>
+        </div>
+    </div>
+    
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <!-- Total Alerts Card -->
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-bell metric-icon"></i>
+                    <h6 class="metric-title">Total Alerts</h6>
+                </div>
+                <div class="metric-value">{{ stats.total_alerts }}</div>
+                <div class="metric-footer">
+                    <small>
+                        <i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i>
+                        {{ stats.critical_alerts }} Critical
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Unacknowledged Alerts Card -->
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-inbox metric-icon" style="color: #ff9800;"></i>
+                    <h6 class="metric-title">Unacknowledged</h6>
+                </div>
+                <div class="metric-value">{{ stats.unacknowledged_alerts }}</div>
+                <div class="metric-footer">
+                    <small>Require attention</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Slices Card -->
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-network-wired metric-icon" style="color: #2196f3;"></i>
+                    <h6 class="metric-title">Active Slices</h6>
+                </div>
+                <div class="metric-value">{{ stats.active_slices }}</div>
+                <div class="metric-footer">
+                    <small>Network slices</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Predictions Card -->
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-chart-line metric-icon" style="color: #4caf50;"></i>
+                    <h6 class="metric-title">Predictions</h6>
+                </div>
+                <div class="metric-value">{{ stats.active_predictions }}</div>
+                <div class="metric-footer">
+                    <small>ML predictions</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Network Slices Section -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-layer-group"></i> Active Network Slices
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    {% if predictions %}
+                        {% for pred in predictions %}
+                            <div class="slice-card mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="slice-name">{{ pred.slice_id }}</h6>
+                                        <small class="text-muted">UE Count: 45 | Last Update: {{ pred.created_at.strftime('%H:%M:%S') }}</small>
+                                    </div>
+                                    <span class="badge 
+                                        {% if pred.congestion_level == 'Critical' %}bg-danger
+                                        {% elif pred.congestion_level == 'Light' %}bg-warning
+                                        {% else %}bg-success{% endif %}">
+                                        {{ pred.congestion_level }}
+                                    </span>
+                                </div>
+                                
+                                <div class="row mt-3 slice-metrics">
+                                    <div class="col-md-3">
+                                        <small><strong>Bandwidth</strong></small>
+                                        <p>85.5 Mbps</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small><strong>Latency</strong></small>
+                                        <p>12.3 ms</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small><strong>Jitter</strong></small>
+                                        <p>2.1 ms</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small><strong>Packet Loss</strong></small>
+                                        <p>1.000%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No active predictions available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alerts & Thresholds Section -->
+        <div class="col-md-4">
+            <!-- Active Alerts -->
+            <div class="card shadow mb-3">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-triangle-exclamation"></i> Active Alerts
+                        <span class="badge bg-light text-danger ms-2">{{ stats.critical_alerts }}</span>
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    {% if alerts %}
+                        <div class="alerts-list">
+                            {% for alert in alerts[:3] %}
+                                <div class="alert-item mb-2">
+                                    <div class="d-flex">
+                                        <i class="fas fa-circle" style="color: 
+                                            {% if alert.level == 'CRITICAL' %}#dc3545
+                                            {% else %}#ff9800{% endif %};
+                                            font-size: 0.5rem; margin-top: 0.4rem; margin-right: 0.5rem;"></i>
+                                        <div>
+                                            <small><strong>{{ alert.slice_id }}</strong></small>
+                                            <p style="font-size: 0.85rem;">{{ alert.message[:40] }}...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No active alerts</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Threshold Configuration -->
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sliders-h"></i> Threshold Configuration
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    {% if thresholds %}
+                        <div class="thresholds-list">
+                            {% for threshold in thresholds[:3] %}
+                                <div class="threshold-item mb-2">
+                                    <p class="mb-1"><strong>{{ threshold.metric }}</strong></p>
+                                    <small>Warn: {{ threshold.warn_value }} | Critical: {{ threshold.critical_value }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No thresholds configured</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .metric-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    .metric-icon {
+        font-size: 1.8rem;
+        color: #667eea;
+        margin-right: 0.5rem;
+    }
+    
+    .metric-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    
+    .metric-title {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #333;
+        margin: 0.5rem 0;
+    }
+    
+    .metric-footer {
+        color: #888;
+        font-size: 0.85rem;
+    }
+    
+    .slice-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 1rem;
+        background: #f9f9f9;
+    }
+    
+    .slice-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.25rem;
+    }
+    
+    .slice-metrics p {
+        margin: 0;
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .alert-item {
+        padding: 0.5rem;
+        border-left: 3px solid #dc3545;
+        background: #fff5f5;
+    }
+    
+    .threshold-item {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+    }
+</style>
+{% endblock %}

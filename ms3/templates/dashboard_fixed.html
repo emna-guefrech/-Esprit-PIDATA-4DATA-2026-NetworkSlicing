@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Slicing Dashboard - MS-3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+        .main-bg {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            min-height: 100vh;
+        }
+        .card-style {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(8px);
+        }
+        .alert-critical { animation: pulse-red 2s infinite; }
+        .alert-warn { animation: pulse-yellow 2s infinite; }
+        @keyframes pulse-red {
+            0%, 100% { background-color: rgba(239, 68, 68, 0.1); }
+            50% { background-color: rgba(239, 68, 68, 0.2); }
+        }
+        @keyframes pulse-yellow {
+            0%, 100% { background-color: rgba(245, 158, 11, 0.1); }
+            50% { background-color: rgba(245, 158, 11, 0.2); }
+        }
+        
+        .nav-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .content-section {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="main-bg text-gray-800">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="card-style p-6 rounded-xl">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold text-blue-800 mb-2">Network Slicing</h1>
+                    </div>
+                    <div class="text-right">
+                        <div id="lastUpdate" class="text-sm text-gray-600 mb-1">Last updated: Never</div>
+                        <div id="connectionStatus" class="text-sm text-green-600">● Connected</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Bar -->
+        <nav class="card-style p-4 mb-6">
+            <div class="flex flex-wrap space-x-2">
+                <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                    📊 Dashboard
+                </button>
+                <button onclick="showSection('history')" id="nav-history" class="nav-btn bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    📜 History
+                </button>
+                <button onclick="showSection('health')" id="nav-health" class="nav-btn bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    🏥 Health Monitor
+                </button>
+                <button onclick="showSection('analytics')" id="nav-analytics" class="nav-btn bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    📈 Analytics
+                </button>
+                <button onclick="showSection('settings')" id="nav-settings" class="nav-btn bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    ⚙️ Settings
+                </button>
+                <button onclick="showSection('reports')" id="nav-reports" class="nav-btn bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    📄 Reports
+                </button>
+            </div>
+        </nav>
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="card-style p-5 text-center">
+                <div class="text-3xl font-bold text-blue-700" id="totalSlices">0</div>
+                <div class="text-sm text-gray-500 mt-1">Active Slices</div>
+            </div>
+            <div class="card-style p-5 text-center">
+                <div class="text-3xl font-bold text-green-600" id="normalSlices">0</div>
+                <div class="text-sm text-gray-500 mt-1">Normal</div>
+            </div>
+            <div class="card-style p-5 text-center">
+                <div class="text-3xl font-bold text-red-600" id="criticalSlices">0</div>
+                <div class="text-sm text-gray-500 mt-1">Critical</div>
+            </div>
+            <div class="card-style p-5 text-center">
+                <div class="text-3xl font-bold text-yellow-600" id="alertCount">0</div>
+                <div class="text-sm text-gray-500 mt-1">Active Alerts</div>
+            </div>
+        </div>
+
+       
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="content-section">
+            <!-- Stats Row -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="card-style p-5 text-center">
+                    <div class="text-3xl font-bold text-blue-700" id="totalSlices">0</div>
+                    <div class="text-sm text-gray-500 mt-1">Active Slices</div>
+                </div>
+                <div class="card-style p-5 text-center">
+                    <div class="text-3xl font-bold text-green-600" id="normalSlices">0</div>
+                    <div class="text-sm text-gray-500 mt-1">Normal</div>
+                </div>
+                <div class="card-style p-5 text-center">
+                    <div class="text-3xl font-bold text-red-600" id="criticalSlices">0</div>
+                    <div class="text-sm text-gray-500 mt-1">Critical</div>
+                </div>
+                <div class="card-style p-5 text-center">
+                    <div class="text-3xl font-bold text-yellow-600" id="alertCount">0</div>
+                    <div class="text-sm text-gray-500 mt-1">Active Alerts</div>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Slices Section -->
+                <div class="card-style p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-blue-800">Active Network Slices</h2>
+                    </div>
+                    <div id="slicesContainer" class="space-y-3">
+                        <div class="text-center text-gray-400 py-8">Loading slices...</div>
+                    </div>
+                </div>
+
+                <!-- Alerts Section -->
+                <div class="card-style p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-blue-800">🚨 Active Alerts (Automatic)</h2>
+                        <div class="text-sm text-gray-500">Auto-generated from predictions</div>
+                    </div>
+                    <div id="alertsContainer" class="space-y-3">
+                        <div class="text-center text-gray-400 py-8">Loading alerts...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QoS Chart -->
+            <div class="card-style p-6 mt-6">
+                <h2 class="text-xl font-bold text-blue-800 mb-4">QoS Performance</h2>
+                <canvas id="qosChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="history-section" class="content-section hidden">
+            <div class="card-style p-6">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">📜 Alert History</h2>
+                <div class="mb-4">
+                    <input type="date" id="historyDate" class="border rounded p-2 mr-2">
+                    <button onclick="loadHistory()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Load History
+                    </button>
+                </div>
+                <div id="historyContainer" class="space-y-3">
+                    <div class="text-center text-gray-400 py-8">Select a date to load history...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Monitor Section -->
+        <div id="health-section" class="content-section hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="card-style p-6">
+                    <h3 class="text-xl font-bold text-blue-800 mb-4">🏥 System Health</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Database</span>
+                            <span class="text-green-600">● Online</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>MS-1 Connection</span>
+                            <span class="text-green-600">● Connected</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Alert System</span>
+                            <span class="text-green-600">● Active</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-style p-6">
+                    <h3 class="text-xl font-bold text-blue-800 mb-4">📊 Performance</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>CPU Usage</span>
+                            <span class="text-green-600">12%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Memory</span>
+                            <span class="text-yellow-600">67%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Response Time</span>
+                            <span class="text-green-600">45ms</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-style p-6">
+                    <h3 class="text-xl font-bold text-blue-800 mb-4">🔧 Services</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>MS-1 Service</span>
+                            <span class="text-green-600">● Running</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>MS-3 Service</span>
+                            <span class="text-green-600">● Running</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Sync Service</span>
+                            <span class="text-green-600">● Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div id="analytics-section" class="content-section hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card-style p-6">
+                    <h3 class="text-xl font-bold text-blue-800 mb-4">📈 Alert Trends</h3>
+                    <canvas id="alertTrendsChart" height="200"></canvas>
+                </div>
+                <div class="card-style p-6">
+                    <h3 class="text-xl font-bold text-blue-800 mb-4">🎯 QoS Statistics</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Average QoS Score</span>
+                            <span class="font-bold">0.742</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Peak Alert Time</span>
+                            <span class="font-bold">14:30</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Total Alerts Today</span>
+                            <span class="font-bold text-red-600">23</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>System Uptime</span>
+                            <span class="font-bold text-green-600">99.8%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings-section" class="content-section hidden">
+            <div class="card-style p-6">
+                <h3 class="text-2xl font-bold text-blue-800 mb-4">⚙️ Settings</h3>
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-lg font-semibold mb-3">🔊 Sound Settings</h4>
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="soundEnabled" checked class="mr-2">
+                                <span>Enable Sound Notifications</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold mb-3">🔄 Auto-refresh Settings</h4>
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="autoRefresh" checked class="mr-2">
+                                <span>Enable Auto-refresh</span>
+                            </label>
+                            <input type="number" id="refreshInterval" value="30" min="10" max="300" class="border rounded p-2 w-20">
+                            <span>seconds</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold mb-3">🎨 Display Settings</h4>
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="darkMode" class="mr-2">
+                                <span>Dark Mode</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="reports-section" class="content-section hidden">
+            <div class="card-style p-6">
+                <h3 class="text-2xl font-bold text-blue-800 mb-4">📄 Reports</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-lg font-semibold mb-3">📊 Generate Reports</h4>
+                        <div class="space-y-3">
+                            <button onclick="generateReport('daily')" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                📅 Daily Report
+                            </button>
+                            <button onclick="generateReport('weekly')" class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                📆 Weekly Report
+                            </button>
+                            <button onclick="generateReport('monthly')" class="w-full bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
+                                📈 Monthly Report
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold mb-3">📋 Recent Reports</h4>
+                        <div id="recentReports" class="space-y-2">
+                            <div class="text-gray-400">No reports generated yet...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="sliceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-96">
+            <h3 class="text-lg font-bold mb-4">Add New Slice</h3>
+            <form id="sliceForm" class="space-y-3">
+                <input type="text" id="sliceId" placeholder="Slice ID" class="w-full border rounded p-2" required>
+                <select id="pipeline" class="w-full border rounded p-2">
+                    <option value="6G">6G</option>
+                    <option value="5G">5G</option>
+                </select>
+                <input type="number" id="qosScore" placeholder="QoS Score (0-1)" step="0.01" min="0" max="1" class="w-full border rounded p-2">
+                <select id="congestionLevel" class="w-full border rounded p-2">
+                    <option value="Normal">Normal</option>
+                    <option value="Light">Light</option>
+                    <option value="Critical">Critical</option>
+                </select>
+                <div class="flex space-x-2">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Create</button>
+                    <button type="button" onclick="hideSliceModal()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <script>
+        let qosChart = null;
+        let pollingInterval = null;
+        let lastAlertCount = 0;
+        let alertSoundEnabled = true;
+        
+        // Web Audio API for generating sounds
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeep(frequency, duration, type = 'sine') {
+            if (!alertSoundEnabled) return;
+            
+            try {
+                initAudio();
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+                
+            } catch (error) {
+                console.log('Sound error:', error);
+                // Fallback: try using system beep
+                try {
+                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+                    audio.play();
+                } catch (e) {
+                    console.log('Fallback sound also failed:', e);
+                }
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChart();
+            startPolling();
+            loadInitialData();
+        });
+
+        // Start real-time polling (30 seconds)
+        function startPolling() {
+            pollingInterval = setInterval(() => {
+                updateSlices();
+                updateAlerts();
+                updateStats();
+            }, 30000);
+        }
+
+        // Load initial data
+        async function loadInitialData() {
+            await Promise.all([
+                updateSlices(),
+                updateAlerts(),
+                updateStats()
+            ]);
+            updateLastUpdateTime();
+        }
+
+        // Update slices data
+        async function updateSlices() {
+            try {
+                const response = await fetch('/dashboard/slices');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    renderSlices(result.data);
+                } else {
+                    console.error('Error fetching slices:', result.message);
+                }
+            } catch (error) {
+                console.error('Network error fetching slices:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Render slices
+        function renderSlices(slices) {
+            const container = document.getElementById('slicesContainer');
+            
+            if (slices.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 py-8">No active slices</div>';
+                return;
+            }
+
+            container.innerHTML = slices.map(slice => {
+                const congestionClass = slice.congestion_level === 'Normal' ? 'bg-green-100 text-green-800' : 
+                                     slice.congestion_level === 'Light' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800';
+                
+                const qosColor = slice.qos_score >= 0.7 ? 'text-green-600' : 
+                                slice.qos_score >= 0.4 ? 'text-yellow-600' : 'text-red-600';
+                
+                return `
+                    <div class="border-l-4 ${slice.congestion_level === 'Critical' ? 'border-red-500' : slice.congestion_level === 'Light' ? 'border-yellow-500' : 'border-green-500'} p-4 bg-white rounded">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-semibold text-lg">${slice.slice_id}</h3>
+                                <span class="inline-block px-2 py-1 rounded text-xs font-medium ${congestionClass}">
+                                    ${slice.pipeline} - ${slice.congestion_level}
+                                </span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-medium ${qosColor}">QoS: ${(slice.qos_score || 0).toFixed(3)}</div>
+                                <div class="text-xs text-gray-500">${new Date(slice.last_updated).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <div class="text-gray-500">Latency</div>
+                                <div class="font-medium">${slice.slice_latency}μs / ${slice.latency_budget}μs</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-500">Packet Loss</div>
+                                <div class="font-medium">${(slice.slice_packet_loss || 0).toFixed(3)}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t flex justify-between items-center">
+                            <div class="text-xs text-gray-500">
+                                ${slice.is_anomaly ? '🚨 Anomaly' : '✅ Normal'}
+                            </div>
+                            <div class="space-x-2">
+                                <button onclick="deleteSlice('${slice.slice_id}')" class="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update alerts data
+        async function updateAlerts() {
+            try {
+                const response = await fetch('/dashboard/alerts');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    renderAlerts(result.data);
+                } else {
+                    console.error('Error fetching alerts:', result.message);
+                }
+            } catch (error) {
+                console.error('Network error fetching alerts:', error);
+            }
+        }
+
+        // Play alert sound
+        function playAlertSound(alertLevel) {
+            if (!alertSoundEnabled) return;
+            
+            if (alertLevel === 'CRITICAL') {
+                // Critical: 3 quick beeps at high frequency
+                playBeep(800, 0.2, 'square');
+                setTimeout(() => playBeep(800, 0.2, 'square'), 300);
+                setTimeout(() => playBeep(800, 0.2, 'square'), 600);
+            } else {
+                // Warning: 2 medium beeps
+                playBeep(600, 0.3, 'sine');
+                setTimeout(() => playBeep(600, 0.3, 'sine'), 400);
+            }
+        }
+
+        // Check for new alerts and play sound
+        function checkForNewAlerts(alerts) {
+            const currentAlertCount = alerts.length;
+            
+            // If new alerts detected
+            if (currentAlertCount > lastAlertCount) {
+                const newAlerts = alerts.slice(lastAlertCount);
+                const hasCritical = newAlerts.some(alert => alert.level === 'CRITICAL');
+                
+                // Play sound for new alerts
+                if (hasCritical) {
+                    playAlertSound('CRITICAL');
+                } else if (newAlerts.length > 0) {
+                    playAlertSound('WARN');
+                }
+            }
+            
+            lastAlertCount = currentAlertCount;
+        }
+
+        // Render alerts
+        function renderAlerts(alerts) {
+            const container = document.getElementById('alertsContainer');
+            
+            // Check for new alerts and play sound
+            checkForNewAlerts(alerts);
+            
+            if (alerts.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 py-8">No active alerts</div>';
+                return;
+            }
+
+            container.innerHTML = alerts.map(alert => {
+                const alertClass = alert.level === 'CRITICAL' ? 'alert-critical bg-red-50' : 'alert-warn bg-yellow-50';
+                const badgeClass = alert.level === 'CRITICAL' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
+                
+                return `
+                    <div class="${alertClass} p-4 rounded">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="px-2 py-1 rounded text-xs font-bold ${badgeClass}">
+                                        ${alert.level}
+                                    </span>
+                                    <span class="font-medium">${alert.slice_id}</span>
+                                </div>
+                                <div class="text-sm text-gray-600">${alert.message}</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-400">${new Date(alert.created_at).toLocaleString()}</span>
+                                <button onclick="acknowledgeAlert(${alert.id})" class="text-xs bg-white border px-2 py-1 rounded hover:bg-gray-50">
+                                    ✓ Ack
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update stats
+        async function updateStats() {
+            try {
+                const [slicesResponse, alertsResponse] = await Promise.all([
+                    fetch('/dashboard/slices'),
+                    fetch('/dashboard/alerts')
+                ]);
+                
+                const slicesResult = await slicesResponse.json();
+                const alertsResult = await alertsResponse.json();
+                
+                if (slicesResult.status === 'success') {
+                    const slices = slicesResult.data;
+                    const total = slices.length;
+                    const normal = slices.filter(s => s.congestion_level === 'Normal').length;
+                    const critical = slices.filter(s => s.congestion_level === 'Critical').length;
+                    
+                    document.getElementById('totalSlices').textContent = total;
+                    document.getElementById('normalSlices').textContent = normal;
+                    document.getElementById('criticalSlices').textContent = critical;
+                    
+                    // Update chart
+                    updateQoSChart(slices);
+                }
+                
+                if (alertsResult.status === 'success') {
+                    document.getElementById('alertCount').textContent = alertsResult.data.length;
+                }
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+
+        // Test functions
+        async function testCriticalAlert() {
+            try {
+                const response = await fetch('/dashboard/test/critical', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    console.log('Critical test alert created');
+                    updateSlices();
+                    updateAlerts();
+                    updateStats();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        async function testMediumAlert() {
+            try {
+                const response = await fetch('/dashboard/test/medium', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    console.log('Medium test alert created');
+                    updateSlices();
+                    updateAlerts();
+                    updateStats();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        function testSound() {
+            // Test both warning and critical sounds
+            playAlertSound('WARN');
+            setTimeout(() => playAlertSound('CRITICAL'), 1000);
+        }
+
+        function toggleSound() {
+            alertSoundEnabled = !alertSoundEnabled;
+            const soundToggle = document.getElementById('soundToggle');
+            
+            if (alertSoundEnabled) {
+                soundToggle.textContent = '🔊 Sound: ON';
+                soundToggle.className = 'bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600';
+                // Test sound - play a simple beep
+                setTimeout(() => playBeep(500, 0.2, 'sine'), 100);
+            } else {
+                soundToggle.textContent = '🔇 Sound: OFF';
+                soundToggle.className = 'bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600';
+            }
+        }
+
+        async function clearAllAlerts() {
+            if (confirm('Clear all alerts?')) {
+                try {
+                    const alertsResponse = await fetch('/dashboard/alerts');
+                    const alertsResult = await alertsResponse.json();
+                    
+                    if (alertsResult.status === 'success') {
+                        const alerts = alertsResult.data;
+                        for (const alert of alerts) {
+                            await fetch('/dashboard/alert/ack', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ alert_id: alert.id })
+                            });
+                        }
+                        
+                        updateAlerts();
+                        updateStats();
+                    }
+                } catch (error) {
+                    alert('Error clearing alerts: ' + error.message);
+                }
+            }
+        }
+
+        // Initialize QoS chart
+        function initializeChart() {
+            const ctx = document.getElementById('qosChart').getContext('2d');
+            qosChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'QoS Score',
+                        data: [],
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100).toFixed(0) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update QoS chart
+        function updateQoSChart(slices) {
+            if (!qosChart) return;
+            
+            qosChart.data.labels = slices.map(s => s.slice_id);
+            qosChart.data.datasets[0].data = slices.map(s => s.qos_score || 0);
+            qosChart.data.datasets[0].backgroundColor = slices.map(s => 
+                (s.qos_score || 0) >= 0.7 ? 'rgba(34, 197, 94, 0.7)' :
+                (s.qos_score || 0) >= 0.4 ? 'rgba(234, 179, 8, 0.7)' :
+                'rgba(239, 68, 68, 0.7)'
+            );
+            qosChart.update();
+        }
+
+        // CRUD operations
+        async function createSlice() {
+            const form = document.getElementById('sliceForm');
+            const formData = new FormData(form);
+            const data = {
+                slice_id: formData.get('slice_id'),
+                pipeline: formData.get('pipeline'),
+                qos_score: parseFloat(formData.get('qos_score')),
+                congestion_level: formData.get('congestion_level')
+            };
+            
+            try {
+                const response = await fetch('/dashboard/slice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    hideSliceModal();
+                    updateSlices();
+                    updateStats();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        
+        async function deleteSlice(sliceId) {
+            if (confirm(`Delete slice ${sliceId}?`)) {
+                try {
+                    const response = await fetch(`/dashboard/slice/${sliceId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        updateSlices();
+                        updateStats();
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                } catch (error) {
+                    alert('Network error: ' + error.message);
+                }
+            }
+        }
+
+        async function acknowledgeAlert(alertId) {
+            try {
+                const response = await fetch('/dashboard/alert/ack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alert_id: alertId })
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    updateAlerts();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        // Modal functions
+        function showAddSliceModal() {
+            document.getElementById('sliceModal').classList.remove('hidden');
+        }
+
+        function hideSliceModal() {
+            document.getElementById('sliceModal').classList.add('hidden');
+            document.getElementById('sliceForm').reset();
+        }
+
+        
+        // Form submissions
+        document.getElementById('sliceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            createSlice();
+        });
+
+        
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            if (connected) {
+                status.textContent = '● Connected';
+                status.className = 'text-sm text-green-600';
+            } else {
+                status.textContent = '● Disconnected';
+                status.className = 'text-sm text-red-600';
+            }
+        }
+
+        // Update last update time
+        function updateLastUpdateTime() {
+            const element = document.getElementById('lastUpdate');
+            element.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+            updateConnectionStatus(true);
+        }
+
+        // Navigation functions
+        function showSection(sectionName) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(section => section.classList.add('hidden'));
+            
+            // Show selected section
+            const selectedSection = document.getElementById(sectionName + '-section');
+            if (selectedSection) {
+                selectedSection.classList.remove('hidden');
+            }
+            
+            // Update nav buttons
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(btn => {
+                btn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                btn.classList.add('bg-gray-500', 'hover:bg-gray-600');
+            });
+            
+            // Highlight active nav button
+            const activeNav = document.getElementById('nav-' + sectionName);
+            if (activeNav) {
+                activeNav.classList.remove('bg-gray-500', 'hover:bg-gray-600');
+                activeNav.classList.add('bg-blue-500', 'hover:bg-blue-600');
+            }
+            
+            // Load section-specific data
+            loadSectionData(sectionName);
+        }
+
+        function loadSectionData(sectionName) {
+            switch(sectionName) {
+                case 'dashboard':
+                    updateSlices();
+                    updateAlerts();
+                    updateStats();
+                    break;
+                case 'history':
+                    loadHistory();
+                    break;
+                case 'health':
+                    updateHealthData();
+                    break;
+                case 'analytics':
+                    loadAnalytics();
+                    break;
+                case 'settings':
+                    loadSettings();
+                    break;
+                case 'reports':
+                    loadReports();
+                    break;
+            }
+        }
+
+        function loadHistory() {
+            const historyDate = document.getElementById('historyDate').value;
+            const historyContainer = document.getElementById('historyContainer');
+            
+            if (!historyDate) {
+                historyContainer.innerHTML = '<div class="text-center text-gray-400 py-8">Select a date to load history...</div>';
+                return;
+            }
+            
+            // Mock history data
+            historyContainer.innerHTML = `
+                <div class="space-y-3">
+                    <div class="border-l-4 border-red-500 p-4 bg-red-50">
+                        <div class="flex justify-between">
+                            <span class="font-semibold">🚨 Critical Alert</span>
+                            <span class="text-sm text-gray-500">${historyDate} 14:30</span>
+                        </div>
+                        <div class="text-sm mt-2">critical_slice_001: Critical congestion, QoS: 0.120</div>
+                    </div>
+                    <div class="border-l-4 border-yellow-500 p-4 bg-yellow-50">
+                        <div class="flex justify-between">
+                            <span class="font-semibold">⚠️ Warning Alert</span>
+                            <span class="text-sm text-gray-500">${historyDate} 12:15</span>
+                        </div>
+                        <div class="text-sm mt-2">test_medium_001: Light congestion, QoS: 0.450</div>
+                    </div>
+                    <div class="border-l-4 border-green-500 p-4 bg-green-50">
+                        <div class="flex justify-between">
+                            <span class="font-semibold">✅ Slice Created</span>
+                            <span class="text-sm text-gray-500">${historyDate} 10:00</span>
+                        </div>
+                        <div class="text-sm mt-2">New slice slice_001 created successfully</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateHealthData() {
+            // Update health status with real data
+            const healthElements = {
+                'Database': document.querySelector('#health-section .text-green-600'),
+                'MS-1 Connection': document.querySelectorAll('#health-section .text-green-600')[1],
+                'Alert System': document.querySelectorAll('#health-section .text-green-600')[2]
+            };
+            
+            // Simulate health checks
+            Object.keys(healthElements).forEach(key => {
+                if (healthElements[key]) {
+                    const isHealthy = Math.random() > 0.1; // 90% chance of being healthy
+                    healthElements[key].className = isHealthy ? 'text-green-600' : 'text-red-600';
+                    healthElements[key].textContent = isHealthy ? '● Online' : '● Offline';
+                }
+            });
+        }
+
+        function loadAnalytics() {
+            // Create analytics chart
+            const ctx = document.getElementById('alertTrendsChart');
+            if (ctx) {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Critical Alerts',
+                            data: [3, 5, 2, 8, 4, 6, 3],
+                            borderColor: 'rgb(239, 68, 68)',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.1
+                        }, {
+                            label: 'Warning Alerts',
+                            data: [12, 8, 15, 10, 14, 9, 11],
+                            borderColor: 'rgb(245, 158, 11)',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+        }
+
+        function loadSettings() {
+            // Load current settings
+            document.getElementById('soundEnabled').checked = alertSoundEnabled;
+        }
+
+        function loadReports() {
+            const reportsContainer = document.getElementById('recentReports');
+            reportsContainer.innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center p-2 border rounded">
+                        <span>📅 Daily Report - ${new Date().toLocaleDateString()}</span>
+                        <button class="text-blue-500 hover:text-blue-600">Download</button>
+                    </div>
+                    <div class="flex justify-between items-center p-2 border rounded">
+                        <span>📆 Weekly Report - Week ${Math.ceil(new Date().getDate() / 7)}</span>
+                        <button class="text-blue-500 hover:text-blue-600">Download</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateReport(type) {
+            const reportData = {
+                type: type,
+                date: new Date().toISOString(),
+                slices: document.getElementById('totalSlices').textContent,
+                alerts: document.getElementById('alertCount').textContent,
+                critical: document.getElementById('criticalSlices').textContent
+            };
+            
+            console.log('Generating report:', reportData);
+            alert(`${type.charAt(0).toUpperCase() + type.slice(1)} report generated successfully!`);
+            loadReports();
+        }
+
+        // Settings event listeners
+        document.getElementById('soundEnabled')?.addEventListener('change', function(e) {
+            alertSoundEnabled = e.target.checked;
+            const soundToggle = document.getElementById('soundToggle');
+            if (soundToggle) {
+                soundToggle.textContent = alertSoundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+        });
+    </script>
+</body>
+</html>

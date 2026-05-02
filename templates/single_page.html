@@ -1,0 +1,1418 @@
+{% extends "base.html" %}
+{% block title %}MS-1 Single Page Application{% endblock %}
+
+{% block content %}
+<!-- Dashboard Section -->
+<div id="dashboard-section" class="content-section">
+    <!-- Stats row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card-style p-5 text-center">
+            <div class="text-3xl font-bold text-blue-700" id="total-count">{{ total }}</div>
+            <div class="text-sm text-gray-500 mt-1">Total Predictions</div>
+            <div class="text-xs text-gray-400 mt-1" id="last-refresh">Live</div>
+        </div>
+        <div class="card-style p-5 text-center">
+            <div class="text-3xl font-bold text-green-600">{{ normal }}</div>
+            <div class="text-sm text-gray-500 mt-1">Normal</div>
+        </div>
+        <div class="card-style p-5 text-center">
+            <div class="text-3xl font-bold text-red-600">{{ critical }}</div>
+            <div class="text-sm text-gray-500 mt-1">Critical</div>
+        </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Prediction Form -->
+        <div class="card-style p-6">
+            <h2 class="text-xl font-bold text-blue-800 mb-4">📥 Slice Metrics Input</h2>
+
+            <!-- Tabs -->
+            <div class="flex space-x-1 mb-4">
+                <button onclick="showForm('qos')" id="btn-qos"
+                    class="flex-1 py-2 px-3 rounded-lg text-xs font-medium button-primary text-white">
+                    📈 6G QoS
+                </button>
+                <button onclick="showForm('qos/5g')" id="btn-qos5g"
+                    class="flex-1 py-2 px-3 rounded-lg text-xs font-medium bg-purple-200 text-purple-700">
+                    📡 5G QoS
+                </button>
+                <button onclick="showForm('congestion')" id="btn-congestion"
+                    class="flex-1 py-2 px-3 rounded-lg text-xs font-medium bg-gray-200 text-gray-700">
+                    🔴 Congestion
+                </button>
+            </div>
+
+ 
+
+                <!-- QoS Form -->
+                <div class="space-y-3">
+    <div class="grid grid-cols-2 gap-3">
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Slice ID</label>
+            <input type="text" id="slice_id" value="slice_001"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+
+        <!-- 6G fields -->
+        <div id="field_latency_budget">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Latency Budget (μs) <span class="text-gray-400">[0 – 1,000,000]</span>
+            </label>
+            <input type="number" id="latency_budget" value="200"
+                min="0" max="1000000" step="1"
+                placeholder="Ex: 200"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_latency_budget">Valeur entre 0 et 1,000,000</p>
+        </div>
+
+        <div id="field_slice_latency">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Slice Latency (μs) <span class="text-gray-400">[1 – 4,000,000]</span>
+            </label>
+            <input type="number" id="slice_latency" value="150"
+                min="1" max="4000000" step="1"
+                placeholder="Ex: 150"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_slice_latency">Valeur entre 1 et 4,000,000</p>
+        </div>
+
+        <div id="field_packet_loss_budget">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Packet Loss Budget <span class="text-gray-400">[0 – 0.0001]</span>
+            </label>
+            <input type="number" id="packet_loss_budget" value="0.00005"
+                min="0" max="0.0001" step="0.000001"
+                placeholder="Ex: 0.00005"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_packet_loss_budget">Valeur entre 0 et 0.0001</p>
+        </div>
+
+        <div id="field_slice_packet_loss">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Slice Packet Loss <span class="text-gray-400">[0 – 0.001]</span>
+            </label>
+            <input type="number" id="slice_packet_loss" value="0.0005"
+                min="0" max="0.001" step="0.0001"
+                placeholder="Ex: 0.0005"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_slice_packet_loss">Valeur entre 0 et 0.001</p>
+        </div>
+
+        <div id="field_jitter_budget">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Jitter Budget (μs) <span class="text-gray-400">[0 – 1,000,000]</span>
+            </label>
+            <input type="number" id="jitter_budget" value="50"
+                min="0" max="1000000" step="1"
+                placeholder="Ex: 50"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_jitter_budget">Valeur entre 0 et 1,000,000</p>
+        </div>
+
+        <div id="field_slice_jitter">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Slice Jitter (μs) <span class="text-gray-400">[1 – 4,000,000]</span>
+            </label>
+            <input type="number" id="slice_jitter" value="30"
+                min="1" max="4000000" step="1"
+                placeholder="Ex: 30"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_slice_jitter">Valeur entre 1 et 4,000,000</p>
+        </div>
+
+        <div id="field_data_rate_budget">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Data Rate Budget (Gbps) <span class="text-gray-400">[0 – 1,000]</span>
+            </label>
+            <input type="number" id="data_rate_budget" value="5.0"
+                min="0" max="1000" step="0.1"
+                placeholder="Ex: 5.0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_data_rate_budget">Valeur entre 0 et 1,000</p>
+        </div>
+
+        <div id="field_slice_transfer_rate">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Transfer Rate (Gbps) <span class="text-gray-400">[1 – 10,000]</span>
+            </label>
+            <input type="number" id="slice_transfer_rate" value="6.0"
+                min="1" max="10000" step="0.1"
+                placeholder="Ex: 6.0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_slice_transfer_rate">Valeur entre 1 et 10,000</p>
+        </div>
+
+        <!-- 5G fields (cachés par défaut) -->
+        <div id="field_time" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Time (h) <span class="text-gray-400">[0 – 23]</span>
+            </label>
+            <input type="number" id="time" value="14"
+                min="0" max="23" step="1"
+                placeholder="Ex: 14"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_time">Valeur entre 0 et 23</p>
+        </div>
+
+        <div id="field_plr" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Packet Loss Rate <span class="text-gray-400">[0.000001 – 0.01]</span>
+            </label>
+            <input type="number" id="plr" value="0.001"
+                min="0.000001" max="0.01" step="0.000001"
+                placeholder="Ex: 0.001"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_plr">Valeur entre 0.000001 et 0.01</p>
+        </div>
+
+        <div id="field_delay" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Packet Delay (ms) <span class="text-gray-400">[10 – 300]</span>
+            </label>
+            <input type="number" id="delay" value="100"
+                min="10" max="300" step="1"
+                placeholder="Ex: 100"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_delay">Valeur entre 10 et 300</p>
+        </div>
+
+        <div id="field_lte5g_cat" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                LTE/5G Category <span class="text-gray-400">[1 – 22]</span>
+            </label>
+            <input type="number" id="lte5g_cat" value="14"
+                min="1" max="22" step="1"
+                placeholder="Ex: 14"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_lte5g_cat">Valeur entre 1 et 22</p>
+        </div>
+    </div>
+
+    <button onclick="predict()" id="predict-btn"
+        class="w-full button-primary text-white py-3 px-4 rounded-lg font-medium mt-2">
+        🔍 Predict
+    </button>
+    <p class="text-xs text-red-500 hidden text-center" id="err_global">
+        ⚠️ Veuillez corriger les valeurs en rouge avant de prédire.
+    </p>
+</div>
+                           
+
+                <!-- Congestion Form -->
+                <div id="congestion-form" class="space-y-3 hidden">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Bandwidth (Mbps)</label>
+                            <input type="number" id="bandwidth" value="1" step="10"
+                                class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Traffic Load</label>
+                            <input type="number" id="traffic_load" value="0.99" step="0.1" min="0" max="1"
+                                class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Packet Loss (%)</label>
+                            <input type="number" id="cong_packet_loss" value="2.0" step="0.01" min="0" max="5"
+                                class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Latency (ms)</label>
+                            <input type="number" id="cong_latency" value="500" step="1"
+                                class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Jitter (ms)</label>
+                            <input type="number" id="cong_jitter" value="100" step="0.1"
+                                class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Queue Length</label>
+                            <input type="number" id="queue_length" value="5000" step="10"
+                                class="w-full border rounded-lg px-3 py-2 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+   
+        </div>
+
+        <!-- Results Panel -->
+        <div class="card-style p-6">
+            <h2 class="text-xl font-bold text-blue-800 mb-4">📊 Prediction Results</h2>
+            <div id="results-panel" class="space-y-4">
+                <div class="text-center text-gray-400 py-8">
+                    <div class="text-6xl mb-4">📈</div>
+                    <p>Enter metrics and click Predict QoS to see results</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Predictions -->
+    <div class="card-style p-6 mt-6">
+        <h2 class="text-xl font-bold text-blue-800 mb-4">📋 Recent Predictions</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b">
+                        <th class="text-left py-2">Slice ID</th>
+                        <th class="text-left py-2">Pipeline</th>
+                        <th class="text-left py-2">QoS Score</th>
+                        <th class="text-left py-2">Congestion</th>
+                        <th class="text-left py-2">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="predictions-table">
+                    {% for pred in predictions %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-2 font-medium">{{ pred.slice_id }}</td>
+                        <td class="py-2">6G</td>
+                        <td class="py-2">
+                            <span class="px-2 py-1 rounded text-xs font-medium
+                                {% if pred.qos_score >= 0.7 %}bg-green-100 text-green-800
+                                {% elif pred.qos_score >= 0.4 %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ "%.3f"|format(pred.qos_score) }}
+                            </span>
+                        </td>
+                        <td class="py-2">
+                            <span class="px-2 py-1 rounded text-xs font-medium
+                                {% if pred.congestion_level == 'Normal' %}bg-green-100 text-green-800
+                                {% elif pred.congestion_level == 'Light' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ pred.congestion_level }}
+                            </span>
+                        </td>
+                        <td class="py-2 text-gray-500">{{ pred.created_at.strftime('%H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- History Section -->
+<div id="history-section" class="content-section hidden">
+    <div class="card-style p-6">
+        <h2 class="text-2xl font-bold text-blue-800 mb-4">📋 Prediction History</h2>
+        <div class="mb-4">
+            <input type="date" id="historyDate" class="border rounded p-2 mr-2">
+            <button onclick="loadHistory()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Load History
+            </button>
+            <button onclick="exportCSV()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-2">
+                ⬇️ Export CSV
+            </button>
+        </div>
+        <div id="historyContainer" class="space-y-3">
+            <div class="text-center text-gray-400 py-8">Select a date to load history...</div>
+        </div>
+    </div>
+</div>
+
+<!-- User Login Section -->
+<div id="user-login-section" class="content-section hidden">
+    <div class="auth-wrapper">
+        <div class="auth-container">
+            <!-- Left: Login Form -->
+            <div class="auth-card">
+                <!-- Header -->
+                <div class="auth-header">
+                    <div class="auth-icon">🔐</div>
+                    <h1>Network Slicing</h1>
+                    <p class="auth-subtitle">Connexion à votre compte</p>
+                </div>
+
+                <!-- Form -->
+                <form onsubmit="handleUserLogin(event)" class="auth-form">
+                    <!-- Username Field -->
+                    <div class="form-group">
+                        <label for="user-username" class="form-label">
+                            <span class="icon">👤</span>
+                            Nom d'utilisateur
+                        </label>
+                        <input 
+                            type="text" 
+                            id="user-username" 
+                            name="username" 
+                            class="form-input"
+                            placeholder="Entrez votre nom d'utilisateur"
+                            required
+                            autofocus
+                        >
+                    </div>
+
+                    <!-- Password Field with Toggle -->
+                    <div class="form-group">
+                        <label for="user-password" class="form-label">
+                            <span class="icon">🔑</span>
+                            Mot de passe
+                        </label>
+                        <div class="password-wrapper">
+                            <input 
+                                type="password" 
+                                id="user-password" 
+                                name="password" 
+                                class="form-input"
+                                placeholder="Entrez votre mot de passe"
+                                required
+                            >
+                            <button type="button" class="password-toggle" onclick="togglePassword('user-password')">
+                                👁️
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="user-remember" name="remember" value="on">
+                        <label for="user-remember">Se souvenir de moi</label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-icon">→</span>
+                        Se connecter
+                    </button>
+                </form>
+
+                <!-- Footer Links -->
+                <div class="auth-footer">
+                    <p>Pas de compte? <button onclick="showUserSection('signup')" class="text-blue-600 hover:underline">S'inscrire maintenant</button></p>
+                </div>
+            </div>
+
+            <!-- Right: Illustration -->
+            <div class="auth-illustration">
+                <div class="illustration-content">
+                    <h2>Bienvenue!</h2>
+                    <p>Connectez-vous à votre tableau de bord Network Slicing pour gérer vos ressources.</p>
+                    <div class="illustration-features">
+                        <div class="feature">✓ Sécurisé et fiable</div>
+                        <div class="feature">✓ Accès en temps réel</div>
+                        <div class="feature">✓ Gestion simplifiée</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Dashboard Section -->
+<div id="user-dashboard-section" class="content-section hidden">
+    <div class="card-style p-6">
+        <h2 class="text-2xl font-bold text-blue-800 mb-4">👤 User Dashboard</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="card-style p-5 text-center">
+                <div class="text-3xl font-bold text-blue-700">12</div>
+                <div class="text-sm text-gray-500 mt-1">Total Alerts</div>
+            </div>
+            <div class="card-style p-5 text-center">
+                <div class="text-3xl font-bold text-red-600">3</div>
+                <div class="text-sm text-gray-500 mt-1">Critical</div>
+            </div>
+            <div class="card-style p-5 text-center">
+                <div class="text-3xl font-bold text-yellow-600">9</div>
+                <div class="text-sm text-gray-500 mt-1">Warning</div>
+            </div>
+            <div class="card-style p-5 text-center">
+                <div class="text-3xl font-bold text-green-600">8</div>
+                <div class="text-sm text-gray-500 mt-1">Active Slices</div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="card-style p-6">
+                <h3 class="text-xl font-bold text-blue-800 mb-4">📊 Recent Activity</h3>
+                <div class="space-y-3">
+                    <div class="border-l-4 border-red-500 p-3 bg-red-50">
+                        <div class="font-semibold">Critical Alert</div>
+                        <div class="text-sm text-gray-600">slice_001 - High latency detected</div>
+                        <div class="text-xs text-gray-500">2 minutes ago</div>
+                    </div>
+                    <div class="border-l-4 border-yellow-500 p-3 bg-yellow-50">
+                        <div class="font-semibold">Warning</div>
+                        <div class="text-sm text-gray-600">slice_002 - Packet loss increasing</div>
+                        <div class="text-xs text-gray-500">15 minutes ago</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-style p-6">
+                <h3 class="text-xl font-bold text-blue-800 mb-4">🎯 Quick Actions</h3>
+                <div class="space-y-3">
+                    <button class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
+                        📈 View All Alerts
+                    </button>
+                    <button class="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">
+                        🔄 Refresh Data
+                    </button>
+                    <button class="w-full bg-purple-500 text-white py-2 rounded hover:bg-purple-600">
+                        📊 Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Profile Section -->
+<div id="user-profile-section" class="content-section hidden">
+    <div class="card-style p-6">
+        <h2 class="text-2xl font-bold text-blue-800 mb-4">👤 User Profile</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card-style p-6 text-center">
+                <div class="text-6xl mb-4">👤</div>
+                <h3 class="text-xl font-bold">John Doe</h3>
+                <p class="text-gray-600">Network Engineer</p>
+                <div class="mt-4 space-y-2">
+                    <div class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Active</div>
+                    <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">Admin</div>
+                </div>
+            </div>
+            
+            <div class="lg:col-span-2">
+                <div class="space-y-6">
+                    <div class="card-style p-4">
+                        <h3 class="text-lg font-bold text-blue-800 mb-3">📋 Account Information</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm text-gray-600">Username</label>
+                                <div class="font-medium">john_doe</div>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-600">Email</label>
+                                <div class="font-medium">john.doe@network.com</div>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-600">Role</label>
+                                <div class="font-medium">Network Engineer</div>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-600">Department</label>
+                                <div class="font-medium">Operations</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-style p-4">
+                        <h3 class="text-lg font-bold text-blue-800 mb-3">🔧 Actions</h3>
+                        <div class="flex space-x-4">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                ✏️ Edit Profile
+                            </button>
+                            <button class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                                🔑 Change Password
+                            </button>
+                            <button onclick="handleUserLogout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                                🚪 Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Signup Section -->
+<div id="user-signup-section" class="content-section hidden">
+    <div class="auth-wrapper">
+        <div class="auth-container">
+            <!-- Left: Signup Form -->
+            <div class="auth-card">
+                <!-- Header -->
+                <div class="auth-header">
+                    <div class="auth-icon">📝</div>
+                    <h1>Network Slicing</h1>
+                    <p class="auth-subtitle">Créer votre compte</p>
+                </div>
+
+                <!-- Form -->
+                <form onsubmit="handleUserSignup(event)" class="auth-form">
+                    <!-- Username Field -->
+                    <div class="form-group">
+                        <label for="signup-username" class="form-label">
+                            <span class="icon">👤</span>
+                            Nom d'utilisateur
+                        </label>
+                        <input 
+                            type="text" 
+                            id="signup-username" 
+                            name="username" 
+                            class="form-input"
+                            placeholder="Choisissez un nom d'utilisateur"
+                            required
+                            autofocus
+                        >
+                    </div>
+
+                    <!-- Email Field -->
+                    <div class="form-group">
+                        <label for="signup-email" class="form-label">
+                            <span class="icon">📧</span>
+                            Email
+                        </label>
+                        <input 
+                            type="email" 
+                            id="signup-email" 
+                            name="email" 
+                            class="form-input"
+                            placeholder="Entrez votre email"
+                            required
+                        >
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="form-group">
+                        <label for="signup-password" class="form-label">
+                            <span class="icon">🔑</span>
+                            Mot de passe
+                        </label>
+                        <div class="password-wrapper">
+                            <input 
+                                type="password" 
+                                id="signup-password" 
+                                name="password" 
+                                class="form-input"
+                                placeholder="Choisissez un mot de passe"
+                                required
+                            >
+                            <button type="button" class="password-toggle" onclick="togglePassword('signup-password')">
+                                👁️
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-icon">→</span>
+                        S'inscrire
+                    </button>
+                </form>
+
+                <!-- Footer Links -->
+                <div class="auth-footer">
+                    <p>Déjà un compte? <button onclick="showUserSection('login')" class="text-blue-600 hover:underline">Se connecter</button></p>
+                </div>
+            </div>
+
+            <!-- Right: Illustration -->
+            <div class="auth-illustration">
+                <div class="illustration-content">
+                    <h2>Rejoignez-nous!</h2>
+                    <p>Créez votre compte pour accéder à votre tableau de bord Network Slicing.</p>
+                    <div class="illustration-features">
+                        <div class="feature">✓ Interface intuitive</div>
+                        <div class="feature">✓ Monitoring en temps réel</div>
+                        <div class="feature">✓ Alertes personnalisées</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Health Section -->
+<div id="health-section" class="content-section hidden">
+    <div class="card-style p-6">
+        <h2 class="text-2xl font-bold text-blue-800 mb-4">🏥 MS-1 System Health</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card-style p-4">
+                <h3 class="text-xl font-bold text-blue-800 mb-4">🏥 System Health</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>Database</span>
+                        <span class="text-green-600">● Online</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>MS-3 Connection</span>
+                        <span class="text-green-600">● Connected</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Prediction Service</span>
+                        <span class="text-green-600">● Active</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-style p-4">
+                <h3 class="text-xl font-bold text-blue-800 mb-4">📊 Performance</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>CPU Usage</span>
+                        <span class="text-green-600">8%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Memory</span>
+                        <span class="text-yellow-600">45%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Response Time</span>
+                        <span class="text-green-600">32ms</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-style p-4">
+                <h3 class="text-xl font-bold text-blue-800 mb-4">🔧 Services</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>QoS Predictor</span>
+                        <span class="text-green-600">● Running</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Congestion Detector</span>
+                        <span class="text-green-600">● Running</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Sync Service</span>
+                        <span class="text-green-600">● Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MS-3 Dashboard Section -->
+<div id="ms3-dashboard-section" class="content-section hidden">
+    <div class="card-style p-6">
+        <h2 class="text-2xl font-bold text-blue-800 mb-4">🚨 MS-3 Alerting Dashboard</h2>
+        <div class="text-center text-gray-400 py-8">
+            <div class="text-6xl mb-4">🚨</div>
+            <p>MS-3 Dashboard content loaded from MS-3 service</p>
+            <p class="text-sm mt-2">Real-time alerts and monitoring</p>
+        </div>
+        <style>
+            .alert-critical { animation: pulse-red 2s infinite; }
+            
+            /* Auth Styles */
+            .auth-wrapper {
+                min-height: calc(100vh - 200px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem;
+            }
+            
+            .auth-container {
+                display: flex;
+                max-width: 1200px;
+                width: 100%;
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }
+            
+            .auth-card {
+                flex: 1;
+                padding: 3rem;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            
+            .auth-header {
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+            
+            .auth-icon {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+            }
+            
+            .auth-header h1 {
+                font-size: 2rem;
+                font-weight: bold;
+                color: #1e40af;
+                margin-bottom: 0.5rem;
+            }
+            
+            .auth-subtitle {
+                color: #6b7280;
+                font-size: 1rem;
+            }
+            
+            .auth-form {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            
+            .form-group {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .form-label {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 500;
+                color: #374151;
+                margin-bottom: 0.5rem;
+            }
+            
+            .form-input {
+                padding: 0.75rem 1rem;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 1rem;
+                transition: border-color 0.2s;
+            }
+            
+            .form-input:focus {
+                outline: none;
+                border-color: #3b82f6;
+            }
+            
+            .password-wrapper {
+                position: relative;
+            }
+            
+            .password-toggle {
+                position: absolute;
+                right: 0.75rem;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 1rem;
+            }
+            
+            .form-checkbox {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            
+            .form-checkbox input[type="checkbox"] {
+                width: 1rem;
+                height: 1rem;
+            }
+            
+            .btn {
+                padding: 0.75rem 1.5rem;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            
+            .btn-primary {
+                background: #3b82f6;
+                color: white;
+            }
+            
+            .btn-primary:hover {
+                background: #2563eb;
+            }
+            
+            .auth-footer {
+                text-align: center;
+                margin-top: 1.5rem;
+                color: #6b7280;
+            }
+            
+            .auth-footer a {
+                color: #3b82f6;
+                text-decoration: none;
+                font-weight: 500;
+            }
+            
+            .auth-footer a:hover {
+                text-decoration: underline;
+            }
+            
+            .auth-illustration {
+                flex: 1;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 3rem;
+                color: white;
+            }
+            
+            .illustration-content h2 {
+                font-size: 2.5rem;
+                font-weight: bold;
+                margin-bottom: 1rem;
+            }
+            
+            .illustration-content p {
+                font-size: 1.1rem;
+                margin-bottom: 2rem;
+                opacity: 0.9;
+            }
+            
+            .illustration-features {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .feature {
+                font-size: 1rem;
+                opacity: 0.9;
+            }
+        </style>
+    </div>
+</div>
+
+<!-- MS-3 Full Section -->
+<div id="ms3-full-section" class="content-section hidden">
+    <div class="card-style p-6">
+        <h2 class="text-2xl font-bold text-blue-800 mb-4">🚨 MS-3 Full Dashboard</h2>
+        <div class="text-center text-gray-400 py-8">
+            <div class="text-6xl mb-4">📊</div>
+            <p>MS-3 Full Dashboard content</p>
+            <p class="text-sm mt-2">Complete system overview and analytics</p>
+        </div>
+    </div>
+</div>
+
+<!-- MS-3 Health Section -->
+<div id="ms3-health-section" class="content-section hidden">
+    <div class="card-style p-6">
+        <h2 class="text-2xl font-bold text-blue-800 mb-4">❤️ MS-3 System Health</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card-style p-4">
+                <h3 class="text-xl font-bold text-blue-800 mb-4">🏥 MS-3 System Health</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>Database</span>
+                        <span class="text-green-600">● Online</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>MS-1 Connection</span>
+                        <span class="text-green-600">● Connected</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Alert System</span>
+                        <span class="text-green-600">● Active</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-style p-4">
+                <h3 class="text-xl font-bold text-blue-800 mb-4">📊 MS-3 Performance</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>CPU Usage</span>
+                        <span class="text-green-600">12%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Memory</span>
+                        <span class="text-yellow-600">67%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Response Time</span>
+                        <span class="text-green-600">45ms</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-style p-4">
+                <h3 class="text-xl font-bold text-blue-800 mb-4">🔧 MS-3 Services</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>MS-1 Service</span>
+                        <span class="text-green-600">● Running</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>MS-3 Service</span>
+                        <span class="text-green-600">● Running</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Sync Service</span>
+                        <span class="text-green-600">● Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentForm = 'qos';
+    let currentEndpoint = 'qos';
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        showSection('dashboard'); // Show dashboard by default
+        showForm('qos'); // Show QoS form by default
+    });
+
+    // Navigation function - SAME PAGE!
+    function showSection(sectionName) {
+        // Hide all sections
+        const sections = document.querySelectorAll('.content-section');
+        sections.forEach(section => section.classList.add('hidden'));
+        
+        // Show selected section
+        const selectedSection = document.getElementById(sectionName + '-section');
+        if (selectedSection) {
+            selectedSection.classList.remove('hidden');
+        }
+        
+        // Update nav buttons
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Highlight active nav button
+        const activeNav = document.getElementById('nav-' + sectionName);
+        if (activeNav) {
+            activeNav.classList.add('active');
+        }
+    }
+
+    // Show MS-3 sections - SAME PAGE!
+    function showMS3Section(sectionName) {
+        // Hide all sections
+        const sections = document.querySelectorAll('.content-section');
+        sections.forEach(section => section.classList.add('hidden'));
+        
+        // Show selected MS-3 section
+        const selectedSection = document.getElementById('ms3-' + sectionName + '-section');
+        if (selectedSection) {
+            selectedSection.classList.remove('hidden');
+        }
+        
+        // Update nav buttons
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Clear all active states
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    }
+
+    // Show User sections - SAME PAGE!
+    function showUserSection(sectionName) {
+        // Hide all sections
+        const sections = document.querySelectorAll('.content-section');
+        sections.forEach(section => section.classList.add('hidden'));
+        
+        // Show selected User section
+        const selectedSection = document.getElementById('user-' + sectionName + '-section');
+        if (selectedSection) {
+            selectedSection.classList.remove('hidden');
+        }
+        
+        // Update nav buttons
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Clear all active states
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        
+        // Load user data when showing dashboard
+        if (sectionName === 'dashboard') {
+            loadUserData();
+        }
+    }
+
+    // User Functions
+    let currentUser = null;
+
+    function loadUserData() {
+        // Load user dashboard data
+        console.log('Loading user dashboard data...');
+        // This would fetch real data from the user service
+    }
+
+    async function handleUserLogin(event) {
+        event.preventDefault();
+        
+        const username = document.getElementById('user-username').value;
+        const password = document.getElementById('user-password').value;
+        const remember = document.getElementById('user-remember').checked;
+        
+        try {
+            const response = await fetch('http://localhost:5000/auth/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                currentUser = result.user;
+                
+                // Show success message
+                alert(result.message);
+                
+                // Redirect to user dashboard
+                showUserSection('dashboard');
+                loadUserData(); // Load real user data
+            } else {
+                alert(result.message);
+            }
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('Erreur de connexion au service User. Vérifiez que le service User tourne sur le port 5000.');
+        }
+    }
+
+    async function handleUserSignup(event) {
+        event.preventDefault();
+        
+        const username = document.getElementById('signup-username').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        
+        try {
+            const response = await fetch('http://localhost:5000/auth/api/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                alert(result.message);
+                
+                // Redirect to login
+                showUserSection('login');
+            } else {
+                alert(result.message);
+            }
+            
+        } catch (error) {
+            console.error('Signup error:', error);
+            alert('Erreur de connexion au service User. Vérifiez que le service User tourne sur le port 5000.');
+        }
+    }
+
+    function handleUserLogout() {
+        if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
+            currentUser = null;
+            alert('Déconnexion réussie!');
+            showUserSection('login');
+        }
+    }
+
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const button = input.nextElementSibling;
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            button.textContent = '🙈';
+        } else {
+            input.type = 'password';
+            button.textContent = '👁️';
+        }
+    }
+
+    // Champs 6G et 5G
+const FIELDS_6G = ['latency_budget','slice_latency','packet_loss_budget',
+                   'slice_packet_loss','jitter_budget','slice_jitter',
+                   'data_rate_budget','slice_transfer_rate'];
+const FIELDS_5G = ['time','plr','delay','lte5g_cat'];
+
+function showForm(type) {
+    currentForm = type;
+    currentEndpoint = type;
+
+    const btns = {
+        'qos':        'btn-qos',
+        'qos/5g':     'btn-qos5g',
+        'congestion': 'btn-congestion',
+    };
+    const activeClasses = {
+        'qos':        'button-primary text-white',
+        'qos/5g':     'bg-purple-500 text-white',
+        'congestion': 'bg-red-500 text-white',
+    };
+
+    Object.keys(btns).forEach(key => {
+        const btn = document.getElementById(btns[key]);
+        if (btn) btn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-medium ' +
+            (key === type ? activeClasses[key] : 'bg-gray-200 text-gray-700');
+    });
+
+    const congestionForm = document.getElementById('congestion-form');
+    const is5G = type === 'qos/5g';
+    const isCongestion = type === 'congestion';
+
+    if (congestionForm) congestionForm.classList.toggle('hidden', !isCongestion);
+
+    FIELDS_6G.forEach(f => {
+        const el = document.getElementById('field_' + f);
+        if (el) el.classList.toggle('hidden', isCongestion || is5G);
+    });
+    FIELDS_5G.forEach(f => {
+        const el = document.getElementById('field_' + f);
+        if (el) el.classList.toggle('hidden', isCongestion || !is5G);
+    });
+}
+
+// Validation
+function validateInputs() {
+    const rules = {
+        // 6G
+        latency_budget:      { min: 0,        max: 1000000 },
+        slice_latency:       { min: 1,        max: 4000000 },
+        packet_loss_budget:  { min: 0,        max: 0.0001  },
+        slice_packet_loss:   { min: 0,        max: 0.001   },
+        jitter_budget:       { min: 0,        max: 1000000 },
+        slice_jitter:        { min: 1,        max: 4000000 },
+        data_rate_budget:    { min: 0,        max: 1000    },
+        slice_transfer_rate: { min: 1,        max: 10000   },
+        // 5G
+        time:                { min: 0,        max: 23      },
+        plr:                 { min: 0.000001, max: 0.01    },
+        delay:               { min: 10,       max: 300     },
+        lte5g_cat:           { min: 1,        max: 22      },
+    };
+
+    const isCongestion = currentEndpoint === 'congestion';
+    const is5G = currentEndpoint === 'qos/5g';
+
+    // Skip QoS validation if congestion form is active
+    if (isCongestion) return true;
+
+    const activeFields = is5G ? FIELDS_5G : [...FIELDS_6G];
+    let valid = true;
+
+    activeFields.forEach(field => {
+        const input = document.getElementById(field);
+        const errEl = document.getElementById('err_' + field);
+        if (!input || !rules[field]) return;
+
+        const val   = parseFloat(input.value);
+        const rule  = rules[field];
+        const isErr = isNaN(val) || val < rule.min || val > rule.max;
+
+        if (errEl) errEl.classList.toggle('hidden', !isErr);
+        input.classList.toggle('border-red-500', isErr);
+        input.classList.toggle('border-gray-300', !isErr);
+        if (isErr) valid = false;
+    });
+
+    document.getElementById('err_global').classList.toggle('hidden', valid);
+    return valid;
+}
+
+async function predict() {
+    // Valider avant d'envoyer
+    if (!validateInputs()) return;
+
+    const btn = document.getElementById('predict-btn');
+    btn.textContent = '⏳ Predicting...';
+    btn.disabled = true;
+
+    const resultDiv = document.getElementById('result-container');
+    resultDiv.innerHTML = '<div class="text-center py-8"><div class="text-3xl animate-spin">⚙️</div></div>';
+
+    try {
+        const res  = await fetch(`/predict/${currentEndpoint}`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(getInput())
+        });
+        const data = await res.json();
+        renderResult(data);
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <strong>❌ Error:</strong> ${err.message}</div>`;
+    } finally {
+        btn.textContent = '🔍 Predict';
+        btn.disabled = false;
+    }
+}
+
+    async function submitPrediction() {
+    const sliceId = document.getElementById('slice_id').value;
+    const pipeline = document.getElementById('pipeline') ? document.getElementById('pipeline').value : '6G';
+
+    let data, endpoint;
+
+    if (currentForm === 'congestion') {
+        data = {
+            slice_id:     sliceId,
+            pipeline:     pipeline,
+            bandwidth:    parseFloat(document.getElementById('bandwidth').value),
+            traffic_load: parseFloat(document.getElementById('traffic_load').value),
+            packet_loss:  parseFloat(document.getElementById('cong_packet_loss').value),
+            latency:      parseFloat(document.getElementById('cong_latency').value),
+            jitter:       parseFloat(document.getElementById('cong_jitter').value),
+            queue_length: parseInt(document.getElementById('queue_length').value)
+        };
+        endpoint = '/predict/congestion';
+    } else {
+        const is5G = currentForm === 'qos/5g';
+        if (is5G) {
+            data = {
+                slice_id:  sliceId,
+                pipeline:  pipeline,
+                time:      parseFloat(document.getElementById('time').value),
+                plr:       parseFloat(document.getElementById('plr').value),
+                delay:     parseFloat(document.getElementById('delay').value),
+                lte5g_cat: parseFloat(document.getElementById('lte5g_cat').value),
+            };
+        } else {
+            data = {
+                slice_id:            sliceId,
+                pipeline:            pipeline,
+                latency_budget:      parseFloat(document.getElementById('latency_budget').value),
+                slice_latency:       parseFloat(document.getElementById('slice_latency').value),
+                packet_loss_budget:  parseFloat(document.getElementById('packet_loss_budget').value),
+                slice_packet_loss:   parseFloat(document.getElementById('slice_packet_loss').value),
+                jitter_budget:       parseFloat(document.getElementById('jitter_budget').value),
+                slice_jitter:        parseFloat(document.getElementById('slice_jitter').value),
+                data_rate_budget:    parseFloat(document.getElementById('data_rate_budget').value),
+                slice_transfer_rate: parseFloat(document.getElementById('slice_transfer_rate').value),
+            };
+        }
+        endpoint = is5G ? '/predict/qos/5g' : '/predict/qos';
+    }
+
+    try {
+        const response = await fetch(endpoint, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(data)
+        });
+        const result = await response.json();
+        displayResults(result);
+        updateStats();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Network error: ' + error.message);
+    }
+}
+
+    function displayResults(result) {
+        const panel = document.getElementById('results-panel');
+        
+        if (result.qos_score !== undefined) {
+            const qosClass = result.qos_score >= 0.7 ? 'bg-green-100 text-green-800' :
+                           result.qos_score >= 0.4 ? 'bg-yellow-100 text-yellow-800' :
+                           'bg-red-100 text-red-800';
+            
+            const congestionClass = result.congestion_level === 'Normal' ? 'bg-green-100 text-green-800' :
+                                  result.congestion_level === 'Light' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800';
+            
+            panel.innerHTML = `
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <div class="text-4xl font-bold ${qosClass.replace('bg-', 'text-').replace('100', '700').replace('800', '900')}">
+                            ${(result.qos_score * 100).toFixed(1)}%
+                        </div>
+                        <div class="text-sm text-gray-600">QoS Score</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-3 bg-gray-50 rounded">
+                            <div class="text-lg font-semibold">${result.congestion_level}</div>
+                            <div class="text-xs text-gray-600">Congestion Level</div>
+                        </div>
+                        <div class="text-center p-3 bg-gray-50 rounded">
+                            <div class="text-lg font-semibold">${result.pipeline}</div>
+                            <div class="text-xs text-gray-600">Pipeline</div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <span class="px-3 py-1 rounded-full text-sm font-medium ${congestionClass}">
+                            ${result.congestion_level === 'Critical' ? '🚨 CRITICAL' : result.congestion_level === 'Light' ? '⚠️ WARNING' : '✅ NORMAL'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async function updateStats() {
+        try {
+            const response = await fetch('/stats');
+            const stats = await response.json();
+            
+            document.getElementById('total-count').textContent = stats.total;
+            document.getElementById('last-refresh').textContent = 'Live';
+            
+        } catch (error) {
+            console.error('Error updating stats:', error);
+        }
+    }
+
+    function loadHistory() {
+        const historyDate = document.getElementById('historyDate').value;
+        const historyContainer = document.getElementById('historyContainer');
+        
+        if (!historyDate) {
+            historyContainer.innerHTML = '<div class="text-center text-gray-400 py-8">Select a date to load history...</div>';
+            return;
+        }
+        
+        // Mock history data
+        historyContainer.innerHTML = `
+            <div class="space-y-3">
+                <div class="border-l-4 border-blue-500 p-4 bg-blue-50">
+                    <div class="flex justify-between">
+                        <span class="font-semibold">📈 QoS Prediction</span>
+                        <span class="text-sm text-gray-500">${historyDate} 14:30</span>
+                    </div>
+                    <div class="text-sm mt-2">slice_001: QoS Score 0.842, Normal congestion</div>
+                </div>
+                <div class="border-l-4 border-purple-500 p-4 bg-purple-50">
+                    <div class="flex justify-between">
+                        <span class="font-semibold">📡 5G Prediction</span>
+                        <span class="text-sm text-gray-500">${historyDate} 12:15</span>
+                    </div>
+                    <div class="text-sm mt-2">slice_002: QoS Score 0.756, Light congestion</div>
+                </div>
+            </div>
+        `;
+    }
+async function exportCSV() {
+    try {
+        const response = await fetch('/predict/export');
+        if (!response.ok) throw new Error('Export failed');
+        const blob = await response.blob();
+        const url  = window.URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'predictions.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        alert('Export error: ' + error.message);
+    }
+}
+</script>
+}
+{% endblock %}

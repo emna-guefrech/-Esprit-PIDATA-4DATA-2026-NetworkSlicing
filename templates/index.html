@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+{% block title %}MS-1 Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Stats row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-blue-700" id="total-count">{{ total }}</div>
+        <div class="text-sm text-gray-500 mt-1">Total Predictions</div>
+        <div class="text-xs text-gray-400 mt-1" id="last-refresh">Live</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-green-600">{{ normal }}</div>
+        <div class="text-sm text-gray-500 mt-1">Normal</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-red-600">{{ critical }}</div>
+        <div class="text-sm text-gray-500 mt-1">Critical</div>
+    </div>
+</div>
+
+<!-- Main grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Prediction Form -->
+    <div class="card-style p-6">
+        <h2 class="text-xl font-bold text-blue-800 mb-4">📥 Slice Metrics Input</h2>
+
+        <!-- Tabs -->
+        <div class="flex space-x-1 mb-4">
+            <button onclick="showForm('qos')" id="btn-qos"
+                class="flex-1 py-2 px-3 rounded-lg text-xs font-medium button-primary text-white">
+                📈 6G QoS
+            </button>
+            <button onclick="showForm('qos/5g')" id="btn-qos5g"
+                class="flex-1 py-2 px-3 rounded-lg text-xs font-medium bg-purple-200 text-purple-700">
+                📡 5G QoS
+            </button>
+            <button onclick="showForm('congestion')" id="btn-congestion"
+                class="flex-1 py-2 px-3 rounded-lg text-xs font-medium bg-gray-200 text-gray-700">
+                🔴 Congestion
+            </button>
+        </div>
+
+        <div class="space-y-3">
+    <div class="grid grid-cols-2 gap-3">
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Slice ID</label>
+            <input type="text" id="slice_id" value="slice_001"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+
+        <!-- 6G fields -->
+        <div id="field_latency_budget">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Latency Budget (μs) <span class="text-gray-400">[0 – 1,000,000]</span>
+            </label>
+            <input type="number" id="latency_budget" value="200"
+                min="0" max="1000000" step="1"
+                placeholder="Ex: 200"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_latency_budget">Valeur entre 0 et 1,000,000</p>
+        </div>
+
+        <div id="field_slice_latency">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Slice Latency (μs) <span class="text-gray-400">[1 – 4,000,000]</span>
+            </label>
+            <input type="number" id="slice_latency" value="150"
+                min="1" max="4000000" step="1"
+                placeholder="Ex: 150"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_slice_latency">Valeur entre 1 et 4,000,000</p>
+        </div>
+
+        <div id="field_packet_loss_budget">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Packet Loss Budget <span class="text-gray-400">[0 – 0.0001]</span>
+            </label>
+            <input type="number" id="packet_loss_budget" value="0.00005"
+                min="0" max="0.0001" step="0.000001"
+                placeholder="Ex: 0.00005"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_packet_loss_budget">Valeur entre 0 et 0.0001</p>
+        </div>
+
+        <div id="field_slice_packet_loss">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Slice Packet Loss <span class="text-gray-400">[0 – 0.001]</span>
+            </label>
+            <input type="number" id="slice_packet_loss" value="0.0005"
+                min="0" max="0.001" step="0.0001"
+                placeholder="Ex: 0.0005"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_slice_packet_loss">Valeur entre 0 et 0.001</p>
+        </div>
+
+        <div id="field_jitter_budget">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Jitter Budget (μs) <span class="text-gray-400">[0 – 1,000,000]</span>
+            </label>
+            <input type="number" id="jitter_budget" value="50"
+                min="0" max="1000000" step="1"
+                placeholder="Ex: 50"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_jitter_budget">Valeur entre 0 et 1,000,000</p>
+        </div>
+
+        <div id="field_slice_jitter">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Slice Jitter (μs) <span class="text-gray-400">[1 – 4,000,000]</span>
+            </label>
+            <input type="number" id="slice_jitter" value="30"
+                min="1" max="4000000" step="1"
+                placeholder="Ex: 30"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_slice_jitter">Valeur entre 1 et 4,000,000</p>
+        </div>
+
+        <div id="field_data_rate_budget">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Data Rate Budget (Gbps) <span class="text-gray-400">[0 – 1,000]</span>
+            </label>
+            <input type="number" id="data_rate_budget" value="5.0"
+                min="0" max="1000" step="0.1"
+                placeholder="Ex: 5.0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_data_rate_budget">Valeur entre 0 et 1,000</p>
+        </div>
+
+        <div id="field_slice_transfer_rate">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Transfer Rate (Gbps) <span class="text-gray-400">[1 – 10,000]</span>
+            </label>
+            <input type="number" id="slice_transfer_rate" value="6.0"
+                min="1" max="10000" step="0.1"
+                placeholder="Ex: 6.0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_slice_transfer_rate">Valeur entre 1 et 10,000</p>
+        </div>
+
+        <!-- 5G fields (cachés par défaut) -->
+        <div id="field_time" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Time (h) <span class="text-gray-400">[0 – 23]</span>
+            </label>
+            <input type="number" id="time" value="14"
+                min="0" max="23" step="1"
+                placeholder="Ex: 14"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_time">Valeur entre 0 et 23</p>
+        </div>
+
+        <div id="field_plr" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Packet Loss Rate <span class="text-gray-400">[0.000001 – 0.01]</span>
+            </label>
+            <input type="number" id="plr" value="0.001"
+                min="0.000001" max="0.01" step="0.000001"
+                placeholder="Ex: 0.001"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_plr">Valeur entre 0.000001 et 0.01</p>
+        </div>
+
+        <div id="field_delay" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Packet Delay (ms) <span class="text-gray-400">[10 – 300]</span>
+            </label>
+            <input type="number" id="delay" value="100"
+                min="10" max="300" step="1"
+                placeholder="Ex: 100"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_delay">Valeur entre 10 et 300</p>
+        </div>
+
+        <div id="field_lte5g_cat" class="hidden">
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                LTE/5G Category <span class="text-gray-400">[1 – 22]</span>
+            </label>
+            <input type="number" id="lte5g_cat" value="14"
+                min="1" max="22" step="1"
+                placeholder="Ex: 14"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <p class="text-xs text-red-500 hidden" id="err_lte5g_cat">Valeur entre 1 et 22</p>
+        </div>
+    </div>
+
+    <button onclick="predict()" id="predict-btn"
+        class="w-full button-primary text-white py-3 px-4 rounded-lg font-medium mt-2">
+        🔍 Predict
+    </button>
+    <p class="text-xs text-red-500 hidden text-center" id="err_global">
+        ⚠️ Veuillez corriger les valeurs en rouge avant de prédire.
+    </p>
+</div>
+
+    <!-- Result -->
+    <div class="card-style p-6">
+        <h2 class="text-xl font-bold text-blue-800 mb-4">📊 Prediction Result</h2>
+        <div id="result-container">
+            <div class="text-center text-gray-400 py-12">
+                <div class="text-5xl mb-3">📡</div>
+                <p>Fill in the metrics and click Predict</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent predictions -->
+<div class="card-style p-6 mt-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-blue-800">🕐 Recent Predictions</h2>
+        <a href="/history" class="text-sm text-blue-600 hover:underline">View all →</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-blue-50 text-blue-800">
+                    <th class="px-4 py-2 text-left rounded-tl-lg">Slice ID</th>
+                    <th class="px-4 py-2 text-left">Congestion</th>
+                    <th class="px-4 py-2 text-left">QoS Score</th>
+                    <th class="px-4 py-2 text-left rounded-tr-lg">Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in recent %}
+                <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors">
+                    <td class="px-4 py-3 font-mono text-xs">{{ p.slice_id }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if p.congestion_level == 'Normal' %}badge-normal
+                            {% elif p.congestion_level == 'Light' %}badge-light
+                            {% else %}badge-critical{% endif %}">
+                            {{ p.congestion_level }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 font-medium
+                        {% if p.qos_score >= 0.7 %}text-green-600
+                        {% elif p.qos_score >= 0.4 %}text-yellow-600
+                        {% else %}text-red-600{% endif %}">
+                        {{ "%.3f"|format(p.qos_score) }}
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">{{ p.created_at.strftime('%H:%M:%S') }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center text-gray-400">No predictions yet</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentEndpoint = 'qos';
+
+// Champs 6G et 5G
+const FIELDS_6G = ['latency_budget','slice_latency','packet_loss_budget',
+                   'slice_packet_loss','jitter_budget','slice_jitter',
+                   'data_rate_budget','slice_transfer_rate'];
+const FIELDS_5G = ['time','plr','delay','lte5g_cat'];
+
+function showForm(type) {
+    currentEndpoint = type;
+
+    // Toggle boutons
+    const btns = {
+        'qos':        'btn-qos',
+        'qos/5g':     'btn-qos5g',
+        'congestion': 'btn-congestion',
+    };
+    const activeClasses = {
+        'qos':        'button-primary text-white',
+        'qos/5g':     'bg-purple-500 text-white',
+        'congestion': 'bg-red-500 text-white',
+    };
+    Object.keys(btns).forEach(key => {
+        const btn = document.getElementById(btns[key]);
+        if (btn) btn.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-medium ' +
+            (key === type ? activeClasses[key] : 'bg-gray-200 text-gray-700');
+    });
+
+    // Afficher/cacher les champs selon le mode
+    const is5G = type === 'qos/5g';
+    FIELDS_6G.forEach(f => {
+        const el = document.getElementById('field_' + f);
+        if (el) el.classList.toggle('hidden', is5G);
+    });
+    FIELDS_5G.forEach(f => {
+        const el = document.getElementById('field_' + f);
+        if (el) el.classList.toggle('hidden', !is5G);
+    });
+}
+
+// Validation
+function validateInputs() {
+    const rules = {
+        // 6G
+        latency_budget:      { min: 0,        max: 1000000  },
+        slice_latency:       { min: 1,        max: 4000000  },
+        packet_loss_budget:  { min: 0,        max: 0.0001   },
+        slice_packet_loss:   { min: 0,        max: 0.001    },
+        jitter_budget:       { min: 0,        max: 1000000  },
+        slice_jitter:        { min: 1,        max: 4000000  },
+        data_rate_budget:    { min: 0,        max: 1000     },
+        slice_transfer_rate: { min: 1,        max: 10000    },
+        // 5G
+        time:                { min: 0,        max: 23       },
+        plr:                 { min: 0.000001, max: 0.01     },
+        delay:               { min: 10,       max: 300      },
+        lte5g_cat:           { min: 1,        max: 22       },
+    };
+
+    const is5G = currentEndpoint === 'qos/5g';
+    const activeFields = is5G ? FIELDS_5G : [...FIELDS_6G];
+    let valid = true;
+
+    activeFields.forEach(field => {
+        const input = document.getElementById(field);
+        const errEl = document.getElementById('err_' + field);
+        if (!input || !rules[field]) return;
+
+        const val   = parseFloat(input.value);
+        const rule  = rules[field];
+        const isErr = isNaN(val) || val < rule.min || val > rule.max;
+
+        if (errEl) errEl.classList.toggle('hidden', !isErr);
+        input.classList.toggle('border-red-500', isErr);
+        input.classList.toggle('border-gray-300', !isErr);
+        if (isErr) valid = false;
+    });
+
+    document.getElementById('err_global').classList.toggle('hidden', valid);
+    return valid;
+}
+
+async function predict() {
+    // Valider avant d'envoyer
+    if (!validateInputs()) return;
+
+    const btn = document.getElementById('predict-btn');
+    btn.textContent = '⏳ Predicting...';
+    btn.disabled = true;
+
+    const resultDiv = document.getElementById('result-container');
+    resultDiv.innerHTML = '<div class="text-center py-8"><div class="text-3xl animate-spin">⚙️</div></div>';
+
+    try {
+        const res  = await fetch(`/predict/${currentEndpoint}`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(getInput())
+        });
+        const data = await res.json();
+        renderResult(data);
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <strong>❌ Error:</strong> ${err.message}</div>`;
+    } finally {
+        btn.textContent = '🔍 Predict';
+        btn.disabled = false;
+    }
+}
+
+function getInput() {
+    const is5G = currentEndpoint === 'qos/5g';
+    if (is5G) {
+        return {
+            slice_id: document.getElementById('slice_id').value,
+            time: parseFloat(document.getElementById('time').value),
+            plr: parseFloat(document.getElementById('plr').value),
+            delay: parseFloat(document.getElementById('delay').value),
+            lte5g_cat: parseFloat(document.getElementById('lte5g_cat').value),
+        };
+    } else {
+        return {
+            slice_id: document.getElementById('slice_id').value,
+            latency_budget: parseFloat(document.getElementById('latency_budget').value),
+            slice_latency: parseFloat(document.getElementById('slice_latency').value),
+            packet_loss_budget: parseFloat(document.getElementById('packet_loss_budget').value),
+            slice_packet_loss: parseFloat(document.getElementById('slice_packet_loss').value),
+            jitter_budget: parseFloat(document.getElementById('jitter_budget').value),
+            slice_jitter: parseFloat(document.getElementById('slice_jitter').value),
+            data_rate_budget: parseFloat(document.getElementById('data_rate_budget').value),
+            slice_transfer_rate: parseFloat(document.getElementById('slice_transfer_rate').value),
+        };
+    }
+}
+
+async function predict() {
+    const btn = document.getElementById('predict-btn');
+    btn.textContent = '⏳ Predicting...';
+    btn.disabled = true;
+
+    const resultDiv = document.getElementById('result-container');
+    resultDiv.innerHTML = '<div class="text-center py-8"><div class="text-3xl animate-spin">⚙️</div></div>';
+
+    try {
+        const res  = await fetch(`/predict/${currentEndpoint}`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(getInput())
+        });
+        const data = await res.json();
+        renderResult(data);
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <strong>❌ Error:</strong> ${err.message}</div>`;
+    } finally {
+        btn.textContent = '🔍 Predict';
+        btn.disabled = false;
+    }
+}
+
+function renderResult(data) {
+    const resultDiv = document.getElementById('result-container');
+
+    if (data.error) {
+        resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <strong>❌ Error:</strong> ${data.error}</div>`;
+        return;
+    }
+
+    const level = data.congestion_level || 'Normal';
+    const colorMap = {
+        'Normal':   { bg: 'bg-green-50',  border: 'border-green-500', text: 'text-green-700', emoji: '✅' },
+        'Light':    { bg: 'bg-yellow-50', border: 'border-yellow-500', text: 'text-yellow-700', emoji: '⚠️' },
+        'Critical': { bg: 'bg-red-50',    border: 'border-red-500',   text: 'text-red-700',   emoji: '🚨' },
+    };
+    const c = colorMap[level] || colorMap['Normal'];
+
+    let html = `
+        <div class="${c.bg} border-l-4 ${c.border} p-5 rounded-lg">
+            <div class="text-3xl font-bold ${c.text} mb-3">
+                ${c.emoji} ${level}
+            </div>`;
+
+    if (data.qos_score !== undefined) {
+        const pct = (data.qos_score * 100).toFixed(1);
+        html += `
+            <div class="mb-3">
+                <div class="text-sm text-gray-600 mb-1">QoS Score</div>
+                <div class="text-2xl font-bold ${c.text}">${pct}%</div>
+                <div class="bg-gray-200 rounded-full h-3 mt-2">
+                    <div class="${data.qos_score >= 0.7 ? 'bg-green-500' :
+                                  data.qos_score >= 0.4 ? 'bg-yellow-500' : 'bg-red-500'}
+                                 h-3 rounded-full transition-all"
+                         style="width: ${pct}%"></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div class="bg-white rounded p-2">
+                    <div class="text-gray-500">SLA</div>
+                    <div class="font-medium">${data.sla_respected ? '✅ Respected' : '❌ Violated'}</div>
+                </div>
+                <div class="bg-white rounded p-2">
+                    <div class="text-gray-500">Risk</div>
+                    <div class="font-medium">${data.risk_level}</div>
+                </div>
+            </div>`;
+    }
+
+    if (data.confidence !== undefined) {
+        html += `
+            <div class="mt-3 text-sm">
+                <span class="text-gray-600">Confidence: </span>
+                <strong>${(data.confidence * 100).toFixed(1)}%</strong>
+            </div>`;
+    }
+
+    html += `
+            <div class="mt-3 text-xs text-gray-500">
+                Slice ID: <span class="font-mono">${data.slice_id}</span>
+            </div>
+        </div>`;
+
+    resultDiv.innerHTML = html;
+} 
+// Auto-refresh stats every 30 seconds
+setInterval(async () => {
+    try {
+        const res  = await fetch('/predict/history?limit=5');
+        const data = await res.json();
+        document.getElementById('total-count').textContent = data.total;
+        document.getElementById('last-refresh').textContent =
+            'Last refresh: ' + new Date().toLocaleTimeString();
+    } catch(e) {}
+}, 30000);
+
+</script>
+{% endblock %}

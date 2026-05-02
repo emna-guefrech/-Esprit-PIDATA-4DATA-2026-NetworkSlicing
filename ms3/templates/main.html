@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+
+{% block title %}MS-3 Alerting System{% endblock %}
+
+{% block content %}
+<div class="text-center mb-8">
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-blue-700" id="totalSlices">0</div>
+        <div class="text-sm text-gray-500 mt-1">Active Slices</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-green-600" id="normalSlices">0</div>
+        <div class="text-sm text-gray-500 mt-1">Normal</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-red-600" id="criticalSlices">0</div>
+        <div class="text-sm text-gray-500 mt-1">Critical</div>
+    </div>
+    <div class="card-style p-5 text-center">
+        <div class="text-3xl font-bold text-yellow-600" id="alertCount">0</div>
+        <div class="text-sm text-gray-500 mt-1">Active Alerts</div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Slices Section -->
+    <div class="card-style p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-blue-800">🌐 Active Network Slices</h2>
+            <div class="text-sm text-gray-500">Real-time monitoring</div>
+        </div>
+        <div id="slicesContainer" class="space-y-3">
+            <div class="text-center text-gray-400 py-8">Loading slices...</div>
+        </div>
+    </div>
+
+    <!-- Alerts Section -->
+    <div class="card-style p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-blue-800">⚠️ Active Alerts</h2>
+            <div class="text-sm text-gray-500">Automatic detection</div>
+        </div>
+        <div id="alertsContainer" class="space-y-3">
+            <div class="text-center text-gray-400 py-8">Loading alerts...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Buttons -->
+<div class="card-style p-4 mb-6">
+    <h3 class="text-lg font-bold text-blue-800 mb-3">🧪 Test Alert System</h3>
+    <div class="flex space-x-4">
+        <button onclick="testCriticalAlert()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+            🚨 Test Critical Alert
+        </button>
+        <button onclick="testMediumAlert()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+            ⚠️ Test Medium Alert
+        </button>
+        <button onclick="clearAllAlerts()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+            🗑️ Clear All Alerts
+        </button>
+    </div>
+</div>
+
+<!-- QoS Chart -->
+<div class="card-style p-6 mt-6">
+    <h2 class="text-xl font-bold text-blue-800 mb-4">📈 QoS Performance</h2>
+    <canvas id="qosChart" height="100"></canvas>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let qosChart = null;
+    let pollingInterval = null;
+    let lastAlertCount = 0;
+    let alertSoundEnabled = true;
+    
+    // Web Audio API for generating sounds
+    let audioContext = null;
+
+    function initAudio() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    function playBeep(frequency, duration, type = 'sine') {
+        if (!alertSoundEnabled) return;
+        
+        try {
+            initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+            
+        } catch (error) {
+            console.log('Sound error:', error);
+        }
+    }
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeChart();
+        startPolling();
+        loadInitialData();
+    });
+
+    // Start real-time polling (30 seconds)
+    function startPolling() {
+        pollingInterval = setInterval(() => {
+            updateSlices();
+            updateAlerts();
+            updateStats();
+        }, 30000);
+    }
+
+    // Load initial data
+    async function loadInitialData() {
+        await Promise.all([
+            updateSlices(),
+            updateAlerts(),
+            updateStats()
+        ]);
+        updateLastUpdateTime();
+    }
+
+    // Update slices data
+    async function updateSlices() {
+        try {
+            const response = await fetch('/dashboard/slices');
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                renderSlices(result.data);
+            } else {
+                console.error('Error fetching slices:', result.message);
+            }
+        } catch (error) {
+            console.error('Network error fetching slices:', error);
+        }
+    }
+
+    // Render slices
+    function renderSlices(slices) {
+        const container = document.getElementById('slicesContainer');
+        
+        if (slices.length === 0) {
+            container.innerHTML = '<div class="text-center text-gray-400 py-8">No active slices</div>';
+            return;
+        }
+
+        container.innerHTML = slices.map(slice => {
+            const congestionClass = slice.congestion_level === 'Normal' ? 'bg-green-100 text-green-800' : 
+                                 slice.congestion_level === 'Light' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800';
+            
+            const qosColor = slice.qos_score >= 0.7 ? 'text-green-600' : 
+                            slice.qos_score >= 0.4 ? 'text-yellow-600' : 'text-red-600';
+            
+            return `
+                <div class="border-l-4 ${slice.congestion_level === 'Critical' ? 'border-red-500' : slice.congestion_level === 'Light' ? 'border-yellow-500' : 'border-green-500'} p-4 bg-white rounded">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="font-semibold text-lg">${slice.slice_id}</h3>
+                            <span class="inline-block px-2 py-1 rounded text-xs font-medium ${congestionClass}">
+                                ${slice.pipeline} - ${slice.congestion_level}
+                            </span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium ${qosColor}">QoS: ${(slice.qos_score || 0).toFixed(3)}</div>
+                            <div class="text-xs text-gray-500">${new Date(slice.last_updated).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <div class="text-gray-500">Latency</div>
+                            <div class="font-medium">${slice.slice_latency}μs / ${slice.latency_budget}μs</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Packet Loss</div>
+                            <div class="font-medium">${(slice.slice_packet_loss || 0).toFixed(3)} / ${(slice.packet_loss_budget || 0).toFixed(3)}</div>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t flex justify-between items-center">
+                        <div class="text-xs text-gray-500">
+                            ${slice.is_anomaly ? '🚨 Anomaly Detected' : '✅ Normal'}
+                        </div>
+                        <div class="space-x-2">
+                            <button onclick="deleteSlice('${slice.slice_id}')" class="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Update alerts data
+    async function updateAlerts() {
+        try {
+            const response = await fetch('/dashboard/alerts');
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                renderAlerts(result.data);
+            } else {
+                console.error('Error fetching alerts:', result.message);
+            }
+        } catch (error) {
+            console.error('Network error fetching alerts:', error);
+        }
+    }
+
+    // Render alerts
+    function renderAlerts(alerts) {
+        const container = document.getElementById('alertsContainer');
+        
+        // Check for new alerts and play sound
+        if (alerts.length > lastAlertCount) {
+            const newAlerts = alerts.slice(lastAlertCount);
+            const hasCritical = newAlerts.some(alert => alert.level === 'CRITICAL');
+            
+            // Play sound for new alerts
+            if (hasCritical) {
+                playBeep(800, 0.2, 'square');
+                setTimeout(() => playBeep(800, 0.2, 'square'), 300);
+                setTimeout(() => playBeep(800, 0.2, 'square'), 600);
+            } else if (newAlerts.length > 0) {
+                playBeep(600, 0.3, 'sine');
+                setTimeout(() => playBeep(600, 0.3, 'sine'), 400);
+            }
+        }
+        
+        lastAlertCount = alerts.length;
+        
+        if (alerts.length === 0) {
+            container.innerHTML = '<div class="text-center text-gray-400 py-8">No active alerts</div>';
+            return;
+        }
+
+        container.innerHTML = alerts.map(alert => {
+            const alertClass = alert.level === 'CRITICAL' ? 'alert-critical bg-red-50' : 'bg-yellow-50';
+            const badgeClass = alert.level === 'CRITICAL' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
+            
+            return `
+                <div class="${alertClass} p-4 rounded">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="px-2 py-1 rounded text-xs font-bold ${badgeClass}">
+                                    ${alert.level}
+                                </span>
+                                <span class="font-medium">${alert.slice_id}</span>
+                            </div>
+                            <div class="text-sm text-gray-600">${alert.message}</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400">${new Date(alert.created_at).toLocaleString()}</span>
+                            <button onclick="acknowledgeAlert(${alert.id})" class="text-xs bg-white border px-2 py-1 rounded hover:bg-gray-50">
+                                ✓ Ack
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Update stats
+    async function updateStats() {
+        try {
+            const [slicesResponse, alertsResponse] = await Promise.all([
+                fetch('/dashboard/slices'),
+                fetch('/dashboard/alerts')
+            ]);
+            
+            const slicesResult = await slicesResponse.json();
+            const alertsResult = await alertsResponse.json();
+            
+            if (slicesResult.status === 'success') {
+                const slices = slicesResult.data;
+                const total = slices.length;
+                const normal = slices.filter(s => s.congestion_level === 'Normal').length;
+                const critical = slices.filter(s => s.congestion_level === 'Critical').length;
+                
+                document.getElementById('totalSlices').textContent = total;
+                document.getElementById('normalSlices').textContent = normal;
+                document.getElementById('criticalSlices').textContent = critical;
+            }
+            
+            if (alertsResult.status === 'success') {
+                document.getElementById('alertCount').textContent = alertsResult.data.length;
+            }
+        } catch (error) {
+            console.error('Error updating stats:', error);
+        }
+    }
+
+    // Initialize QoS chart
+    function initializeChart() {
+        const ctx = document.getElementById('qosChart').getContext('2d');
+        qosChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'QoS Score',
+                    data: [],
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1,
+                        ticks: {
+                            callback: function(value) {
+                                return (value * 100).toFixed(0) + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Update QoS chart
+    function updateQoSChart(slices) {
+        if (!qosChart) return;
+        
+        qosChart.data.labels = slices.map(s => s.slice_id);
+        qosChart.data.datasets[0].data = slices.map(s => s.qos_score || 0);
+        qosChart.data.datasets[0].backgroundColor = slices.map(s => 
+            (s.qos_score || 0) >= 0.7 ? 'rgba(34, 197, 94, 0.7)' :
+            (s.qos_score || 0) >= 0.4 ? 'rgba(234, 179, 8, 0.7)' :
+            'rgba(239, 68, 68, 0.7)'
+        );
+        qosChart.update();
+    }
+
+    // Test functions
+    async function testCriticalAlert() {
+        try {
+            const response = await fetch('/dashboard/test/critical', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const result = await response.json();
+            if (result.status === 'success') {
+                console.log('Critical test alert created');
+                updateSlices();
+                updateAlerts();
+                updateStats();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+        }
+    }
+
+    async function testMediumAlert() {
+        try {
+            const response = await fetch('/dashboard/test/medium', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const result = await response.json();
+            if (result.status === 'success') {
+                console.log('Medium test alert created');
+                updateSlices();
+                updateAlerts();
+                updateStats();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+        }
+    }
+
+    async function clearAllAlerts() {
+        if (confirm('Clear all alerts?')) {
+            try {
+                const alertsResponse = await fetch('/dashboard/alerts');
+                const alertsResult = await alertsResponse.json();
+                
+                if (alertsResult.status === 'success') {
+                    const alerts = alertsResult.data;
+                    for (const alert of alerts) {
+                        await fetch('/dashboard/alert/ack', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ alert_id: alert.id })
+                        });
+                    }
+                    
+                    updateAlerts();
+                    updateStats();
+                }
+            } catch (error) {
+                alert('Error clearing alerts: ' + error.message);
+            }
+        }
+    }
+
+    async function deleteSlice(sliceId) {
+        if (confirm(`Delete slice ${sliceId}?`)) {
+            try {
+                const response = await fetch(`/dashboard/slice/${sliceId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    updateSlices();
+                    updateStats();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+    }
+
+    async function acknowledgeAlert(alertId) {
+        try {
+            const response = await fetch('/dashboard/alert/ack', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ alert_id: alertId })
+            });
+            
+            const result = await response.json();
+            if (result.status === 'success') {
+                updateAlerts();
+                updateStats();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+        }
+    }
+
+    // Update last update time
+    function updateLastUpdateTime() {
+        // This would need to be implemented based on your needs
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MS-3 Alerting System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        .main-bg {
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            min-height: 100vh;
+        }
+        .card-style {
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(147,197,253,0.3);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            backdrop-filter: blur(8px);
+        }
+        .button-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            transition: all 0.2s ease;
+        }
+        .button-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-1px);
+        }
+        .nav-link { transition: all 0.2s; }
+        .nav-link:hover { background: rgba(255,255,255,0.2); border-radius: 8px; }
+        .nav-link.active { background: rgba(255,255,255,0.3); border-radius: 8px; font-weight: 600; }
+        .badge-normal   { background: #dcfce7; color: #166534; }
+        .badge-light    { background: #fef9c3; color: #854d0e; }
+        .badge-critical { background: #fee2e2; color: #991b1b; }
+        @keyframes pulse-red {
+            0%,100% { background-color: rgba(239,68,68,0.1); }
+            50%      { background-color: rgba(239,68,68,0.2); }
+        }
+        .alert-critical { animation: pulse-red 2s infinite; }
+        
+        /* Tailwind CSS classes for navbar */
+        .bg-gradient-to-r { background-image: linear-gradient(to right, var(--tw-gradient-stops)); }
+        .from-blue-900 { --tw-gradient-from: #1e3a8a; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgb(30 58 138 / 0)); }
+        .to-blue-700 { --tw-gradient-to: #1d4ed8; }
+        .text-white { color: white; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .container { width: 100%; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .space-x-3 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.75rem; }
+        .space-x-2 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.5rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .font-bold { font-weight: 700; }
+        .text-blue-200 { color: #bfdbfe; }
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="main-bg text-gray-800">
+
+    <!-- Common Navigation Bar -->
+    {% include 'common_nav.html' %}
+
+    <!-- Main content -->
+    <div class="container mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

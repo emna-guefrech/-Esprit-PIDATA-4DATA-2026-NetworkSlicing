@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}MS-3 History{% endblock %}
+
+{% block content %}
+<div class="text-center mb-8">
+    <h1 class="text-3xl font-bold text-blue-800 mb-2">📋 Alert History</h1>
+    <p class="text-xl text-gray-600">Historique des alertes système</p>
+</div>
+
+<div class="card-style p-6">
+    <div class="mb-4">
+        <input type="date" id="historyDate" class="border rounded p-2 mr-2">
+        <button onclick="loadHistory()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Load History
+        </button>
+    </div>
+    <div id="historyContainer" class="space-y-3">
+        <div class="text-center text-gray-400 py-8">Select a date to load history...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadHistory() {
+    const historyDate = document.getElementById('historyDate').value;
+    const historyContainer = document.getElementById('historyContainer');
+    
+    if (!historyDate) {
+        historyContainer.innerHTML = '<div class="text-center text-gray-400 py-8">Select a date to load history...</div>';
+        return;
+    }
+    
+    // Mock history data
+    historyContainer.innerHTML = `
+        <div class="space-y-3">
+            <div class="border-l-4 border-red-500 p-4 bg-red-50">
+                <div class="flex justify-between">
+                    <span class="font-semibold">🚨 Critical Alert</span>
+                    <span class="text-sm text-gray-500">${historyDate} 14:30</span>
+                </div>
+                <div class="text-sm mt-2">critical_slice_001: Critical congestion, QoS: 0.120</div>
+            </div>
+            <div class="border-l-4 border-yellow-500 p-4 bg-yellow-50">
+                <div class="flex justify-between">
+                    <span class="font-semibold">⚠️ Warning Alert</span>
+                    <span class="text-sm text-gray-500">${historyDate} 12:15</span>
+                </div>
+                <div class="text-sm mt-2">test_medium_001: Light congestion, QoS: 0.450</div>
+            </div>
+        </div>
+    `;
+}
+</script>
+{% endblock %}
