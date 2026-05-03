@@ -337,6 +337,13 @@ def predict_qos():
         qos_score = float(np.clip(qos_raw, 0, 1))
         congestion = qos_to_congestion_level(qos_score)
 
+        # Vérifier unicité slice_id
+        existing = Prediction.query.filter_by(slice_id=slice_id).first()
+        if existing:
+            return jsonify({
+                "error": f"Slice ID '{slice_id}' already exists. Please use a different Slice ID."
+            }), 400
+
         # Save to DB
         pred = Prediction(
             slice_id         = slice_id,
@@ -413,6 +420,13 @@ def predict_qos_5g():
 
         congestion = qos_to_congestion_level(qos_score)
 
+        # Vérifier unicité slice_id
+        existing = Prediction.query.filter_by(slice_id=slice_id).first()
+        if existing:
+            return jsonify({
+                "error": f"Slice ID '{slice_id}' already exists. Please use a different Slice ID."
+            }), 400
+
         # Save to DB
         pred = Prediction(
             slice_id         = slice_id,
@@ -487,6 +501,13 @@ def predict_congestion():
         # Map to human-readable level
         level_map = {"0": "Normal", "1": "Light", "2": "Light", "3": "Critical"}
         congestion = level_map.get(raw_label, "Normal")
+
+        # Vérifier unicité slice_id
+        existing = Prediction.query.filter_by(slice_id=slice_id).first()
+        if existing:
+            return jsonify({
+                "error": f"Slice ID '{slice_id}' already exists. Please use a different Slice ID."
+            }), 400
 
         # Save to DB
         pred = Prediction(
