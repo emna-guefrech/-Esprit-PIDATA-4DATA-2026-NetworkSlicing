@@ -1193,9 +1193,8 @@ async function predict() {
     btn.textContent = '⏳ Predicting...';
     btn.disabled = true;
 
-    const resultDiv = document.getElementById('result-container');
+    const resultDiv = document.getElementById('results-panel');
     resultDiv.innerHTML = '<div class="text-center py-8"><div class="text-3xl animate-spin">⚙️</div></div>';
-
     try {
         const res  = await fetch(`/predict/${currentEndpoint}`, {
             method:  'POST',
@@ -1203,7 +1202,7 @@ async function predict() {
             body:    JSON.stringify(getInput())
         });
         const data = await res.json();
-        renderResult(data);
+        displayResults(data);
     } catch (err) {
         resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
             <strong>❌ Error:</strong> ${err.message}</div>`;
